@@ -1,0 +1,33 @@
+{
+  "name": "farm-connect-backend",
+  "version": "1.0.0",
+  "description": "Farm connect backend",
+  "homepage": "https://github.com/monkie80i/farm-connect-backend#readme",
+  "bugs": {
+    "url": "https://github.com/monkie80i/farm-connect-backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monkie80i/farm-connect-backend.git"
+  },
+  "license": "ISC",
+  "author": "Shahzan Sadick",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "nodemon server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.13"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.6.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "sqlite3": "^5.1.7"
+  }
+}

@@ -1,0 +1,26 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Environment variables
+.env
+.env.test
+
+# Logs and runtime data
+logs
+*.log
+npm-debug.log*
+
+# Build artifacts and compiled code
+build/
+dist/
+coverage/
+
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+
+#database
+database/
