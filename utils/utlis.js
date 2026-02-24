@@ -5,12 +5,10 @@ function pascalToCamel(str) {
 
 function toCamelCaseObject(data) {
 
-  // array handling
   if (Array.isArray(data)) {
     return data.map(item => toCamelCaseObject(item));
   }
 
-  // object handling
   if (data !== null && typeof data === "object") {
     const newObj = {};
 
@@ -22,8 +20,21 @@ function toCamelCaseObject(data) {
     return newObj;
   }
 
-  // primitive values
   return data;
 }
 
-module.exports = { toCamelCaseObject };
+// Helper function to safely format SQL values
+const formatSQLValue = (value) => {
+  if (value === null || value === undefined) {
+    return 'NULL';
+  }
+  if (typeof value === 'string') {
+    return `'${value.replace(/'/g, "''")}'`; // Escape single quotes
+  }
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+  return value;
+};
+
+module.exports = { toCamelCaseObject, formatSQLValue };

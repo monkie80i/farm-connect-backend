@@ -1,4 +1,4 @@
-const db = require('./db');
+const db = require('../db');
 
 // db.exec(`drop table Users`);
 const LOVs = [
@@ -42,8 +42,8 @@ db.exec(`
         LastName NVARCHAR(30) NOT NULL,
         PasswordHash TEXT NOT NULL,
         Email NVARCHAR(256) NOT NULL UNIQUE,
-        PhoneCode NVARCHAR(5) NOT NULL,
-        Phone NVARCHAR(15) NOT NULL,
+        PhoneCode NVARCHAR(5),
+        Phone NVARCHAR(15),
         DateOfBirth DATE NOT NULL,
         Role NVARCHAR(10) NOT NULL,
         IsEmailVerified INTEGER DEFAULT 0,

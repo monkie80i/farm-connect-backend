@@ -3,22 +3,20 @@ const router = express.Router();
 const utils = require("../utils/utlis");
 const authService = require("../services/auth.services");
 const { authorization } = require("../middleware/auth.middleware");
-const { editProfileAndIdVerfication,getUserDetails } = require("../controllers/user.controller");
+const { 
+    editProfileAndIdVerfication,
+    getUserDetails,
+    getUserProfileDetails,
+    editUserDetails,editProfileDetails
+} = require("../controllers/user.controller");
 
-router.post("/:id/id-verification", editProfileAndIdVerfication );
+router.post("/:userId/id-verification", editProfileAndIdVerfication ); // tested working
 
-router.put("/:id", authorization, (req, res) => {
-  // update user 
-  // update user profile
-  // udpate payment methods
-  // update farm details
-  // update farm crops
+router.get("/:userId", getUserDetails ); // tested working
+router.put("/:userId", editUserDetails ); // tested working
 
-});
-
-router.get("/:id/profile", getUserProfileDetails);
-
-router.get("/:id", getUserDetails );
+router.get("/:userId/profile", getUserProfileDetails); // tested working
+router.put("/:userId/profile", editProfileDetails ); // tested working
 
 router.get('/all-negotiations/:userId', (req,res) => {
     // get all negotiations for farmers

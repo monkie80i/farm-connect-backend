@@ -15,11 +15,8 @@ const getUserByUsername = (username) => {
 };
 
 const getUserByUserId = (id) => {
-    const stmt = db.prepare(`SELECT Id, Username,FirstName,LastName, Email,
-        PhoneCode,Phone,DateOfBirth,Role,IsEmailVerified,
-        IsPhoneVerified,IsVerificationFilled,IsAdminVerified,
-        IsActive,IsAdmin,IsBanned,CreatedDate,UpdateDate
-        FROM Users WHERE Id = ? AND IsActive IS TRUE`);
+    console.log("getUserByUserId called with id:", id);
+        const stmt = db.prepare(`SELECT * FROM Users WHERE Id = ?`);
     return stmt.get(id);
    
 }
