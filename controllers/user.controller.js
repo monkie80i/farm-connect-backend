@@ -3,6 +3,8 @@ const authService = require("../services/auth.services");
 const db = require("../db");
 const { toCamelCaseObject,formatSQLValue } = require("../utils/utlis");
 const utils = require("../utils/utlis");
+const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
+
 
 const editProfileAndIdVerfication = (req, res) => {
   // tested working
@@ -17,7 +19,7 @@ const editProfileAndIdVerfication = (req, res) => {
     }
   } catch (error) {
     console.log("user/:id", error);
-    res.status(500).json({ message: "Something went wrong!", error: error });
+    return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 };
 
@@ -36,7 +38,7 @@ const getUserDetails = (req, res) => {
     }
   } catch (error) {
     console.log("user/:id", error);
-    res.status(500).json({ message: "Something went wrong!", error: error });
+    return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 };
 
@@ -88,7 +90,7 @@ const getUserProfileDetails = (req, res) => {
 
   } catch (error) {
     console.log("getUserProfileDetails", error);
-    res.status(500).json({ message: "Something went wrong!", error: error });
+    return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 };
 
@@ -144,7 +146,7 @@ const editUserDetails = (req,res) => {
   
   } catch (error) {
     console.log("editUserDetails", error);
-    res.status(500).json({ message: "Something went wrong!", error: error });
+    return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 };
 
@@ -153,7 +155,7 @@ const editProfileDetails = (req,res) => {
     const userId = Number(req.params.userId);
     const incomingData = req.body;
     const user = userService.getUserById(userId);
-    
+
     if(!user) {
       res.status(404).json({ message: "User Not Found!", data: null })
       return;
@@ -361,11 +363,47 @@ const editProfileDetails = (req,res) => {
     
   } catch (error) {
     console.log("editProfileDetails", error);
-    res.status(500).json({ message: "Something went wrong!", error: error });
+    return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 
   
   
+};
+
+const getAllUserNegotiations = (req,res) => {
+  try {
+    const userId = Number(req.params.userId);
+    const user = userService.getUserById(userId);
+
+    if(!user) {
+      res.status(404).json({ message: "User Not Found!", data: null })
+      return;
+    }
+
+    const role = user.role;
+
+    let negotiations = [];
+
+    if(role === "FARMER") {
+      negotiations = toCamelCaseObject(db.prepare(`
+        SELECT n.*, b.Name as buyerName FROM Negotiation n
+        JOIN Users b ON n.BuyerId = b.Id
+        WHERE n.FarmerId = ?;
+      `).all(userId));
+    } else if(role === "BUYER") {
+      negotiations = toCamelCaseObject(db.prepare(`
+        SELECT n.*, f.Name as farmerName FROM Negotiation n
+        JOIN Users f ON n.FarmerId = f.Id
+        WHERE n.BuyerId = ?;
+      `).all(userId));
+    }
+
+    res.status(200).json({ message: "Success", data: negotiations });
+
+  } catch (error) {
+    console.log("getAllUserNegotiations", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
 };
 
 
@@ -375,4 +413,5 @@ module.exports = {
   getUserProfileDetails,
   editUserDetails,
   editProfileDetails,
+  getAllUserNegotiations,
 };

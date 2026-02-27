@@ -166,11 +166,13 @@ db.exec(`
         CropTypeId INTEGER,
         VarietyId INTEGER,
         FarmId INTEGER,
+        FarmerId INTEGER,
+        LandPrepDate DATETIME,
         SowingDate DATETIME,
-        CurrentHarvestDate DATETIME,
         ExpectedGrowthDurationDays INTEGER,
         CultivatedArea FLOAT,
         CultivatedAreaUnit NVARCHAR(10),
+        CultivatedAreaInAcre FLOAT,
         InitialSoilCondition TEXT,
         InitialNotes TEXT,
         HealthStatus NVARCHAR(20),
@@ -192,7 +194,10 @@ db.exec(`
         FOREIGN KEY (VarietyId) REFERENCES CropVariety(Id) ON DELETE SET NULL,
         FOREIGN KEY (FarmId) REFERENCES Farm(Id) ON DELETE SET NULL,
         FOREIGN KEY (HealthStatus) REFERENCES HealthStatusLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (CurrentStage) REFERENCES CropStagesLov(Code) ON DELETE SET NULL
+        FOREIGN KEY (CurrentStage) REFERENCES CropStagesLov(Code) ON DELETE SET NULL,
+        FOREIGN KEY (CultivatedAreaUnit) REFERENCES LandAreaUnitLov(Code) ON DELETE SET NULL,
+        FOREIGN KEY (FarmerId) REFERENCES Users(Id) ON DELETE SET NULL,
+        FOREIGN KEY (ListingId) REFERENCES CropListing(Id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS CropHealthLog (
@@ -483,19 +488,10 @@ db.exec(`
         FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE SET NULL
     );
 
-    CREATE TABLE IF NOT EXISTS CropStage (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        StageName NVARCHAR(100) NOT NULL,
-        StageOrder INTEGER,
-        Description TEXT
-    );
-
     CREATE TABLE IF NOT EXISTS CropLifecycleDefinition (
         Id INTEGER PRIMARY KEY AUTOINCREMENT,
         CropTypeId INTEGER,
-        StageId INTEGER,
-        MinDaysFromPreviousStage INTEGER,
-        MaxDaysFromPreviousStage INTEGER,
+        CropVarietyId Integer,
         Season NVARCHAR(100),
         Region NVARCHAR(100),
         CreatedUser INTEGER,
@@ -504,9 +500,53 @@ db.exec(`
         UpdatedDate DATETIME,
         FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
         FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (CropTypeId) REFERENCES CropType(Id) ON DELETE SET NULL,
-        FOREIGN KEY (StageId) REFERENCES CropStage(Id) ON DELETE SET NULL
+        FOREIGN KEY (CropTypeId) REFERENCES CropType(Id) ON DELETE CASCADE,
+        FOREIGN KEY (CropVarietyId) REFERENCES CropVariety(Id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS CropLifeCycleStages (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CropLifecycleDefinitionId INTEGER,
+        StageName NVARCHAR(100) NOT NULL,
+        StageOrder INTEGER NOT NULL,
+        MinDaysFromPreviousStage INTEGER NOT NULL,
+        MaxDaysFromPreviousStage INTEGER NOT NULL,
+        Description TEXT,
+        FOREIGN KEY (CropLifecycleDefinitionId) REFERENCES CropLifecycleDefinition(Id) ON DELETE CASCADE,
+        FOREIGN KEY (StageName) REFERENCES CropStagesLov(Code) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS CropStageProgress (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CropId INTEGER NOT NULL,
+        StageName NVARCHAR(20) NOT NULL,
+        StageOrder INTEGER NOT NULL,
+        EstStartDate DATE,
+        EstEndDate DATE,
+        ActualStartDate DATE,
+        ActualEndDate DATE,
+        Notes TEXT,
+        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UpdatedDate DATETIME,
+        FOREIGN KEY (CropId) REFERENCES Crop(Id) ON DELETE CASCADE,
+        FOREIGN KEY (StageName) REFERENCES CropStagesLov(Code) ON DELETE SET NULL,
+        UNIQUE(CropId, StageName)
+    );
+
+    CREATE TABLE IF NOT EXISTS CropStageCaps (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        StageName NVARCHAR(20) NOT NULL,
+        Cap FLOAT NOT NULL,
+        CreatedUser INTEGER,
+        UpdatedUser INTEGER,
+        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UpdatedDate DATETIME,
+        FOREIGN KEY (StageName) REFERENCES CropStagesLov(Code) ON DELETE SET NULL,
+        FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
+        FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL
+    );
+    
+    
 `);
 
 

@@ -1,122 +1,120 @@
 const express = require('express');
 const router = express.Router();
+const { getFarmerDashboard } = require('../controllers/farmer-controllers/farmer.controller');
+const {
+    getFarmerCrops,
+    getCropDetails,
+    createCrop,
+    editCrop,
+    deleteCrop,
+    markCropAsHarvested,
+    getCropLifecycle,
+    cropLifecycleStageObserved,
+    allCropsCalenders,
+    cropCalender,
+    cropYieldEstimation
+} = require('../controllers/farmer-controllers/crop.controller');
+const {
+    cropHealthLogs,
+    createHealthLog,
+    editCropHealthLog,
+    deleteHealthlog
+} = require('../controllers/farmer-controllers/health-log-controllers');
 
-// dashboard for farmers
-router.get('/dashboard/:userId', (req,res) => {
+const {
+    cropListings,
+    createCropListing,
+    editCropListing,
+    deleteCropListing,
+} = require('../controllers/farmer-controllers/listing.controller');
 
-});
+const {
+    searchGroupListings,
+    createGroup,
+    groupDetails,
+    editGroup,
+    listGroupInivitation,
+    createGroupInvitation,
+    listGroupRequest,
+    createGroupRequest
+} = require('../controllers/farmer-controllers/group.controller');
+
+
+router.get('/dashboard/:userId', getFarmerDashboard); // tested working
 
 router.get('/health-alerts/:userId', (req,res) => {
     // get health alerts for farmers
 });
 
-router.get('/crops/:userId', (req,res) => {
-    // get crops for farmers
-});
+router.get('/crops/:userId', getFarmerCrops); // tested working
 
-router.get('/crops/:cropId', (req,res) => {
-    // get crop details for farmers
-});
+router.post('/crops/:userId', createCrop); // tested working
 
-router.post('/crops/:cropId', (req,res) => {
-    // create crop for farmers
-});
+router.get('/crop/:cropId', getCropDetails); // tested working
 
-router.put('/crops/:cropId', (req,res) => {
-    // update crop for farmers
-});
+router.put('/crop/:cropId', editCrop); // tested working
 
-router.delete('/crops/:cropId', (req,res) => {
-    // delete crop for farmers
-});
+router.delete('/crop/:cropId', deleteCrop); // tested working
 
-router.post('/crops/harvest/:cropId', (req,res) => {
-    // mark crop as harvested for farmers
-});
+router.post('/crop/harvest/:cropId', markCropAsHarvested); // tested working
 
-router.get('/crops/lifecycle/:cropId', (req,res) => {
-    // get lifecycle details for crop for farmers
-});
+router.get('/crops/lifecycle/:cropId', getCropLifecycle); // tested working
 
-router.post('/crops/lifecycle-stage-observed/:cropId', (req,res) => {
-    // update lifecycle details for crop for farmers
-});
+router.post('/crops/lifecycle-stage-observed/:cropId', cropLifecycleStageObserved); // tested working
 
-router.get('/crops-health-logs/:cropId', (req,res) => {
-    // get health logs for crop for farmers
-});
+router.get('/crops-health-logs/:cropId',cropHealthLogs); // tested working
 
-router.post('/crops-health-logs/:cropId', (req,res) => {
-    // add health log for crop for farmers
-});
+router.post('/crops-health-logs/:cropId', createHealthLog); // tested working
 
-router.delete('/crops-health-logs/:cropId', (req,res) => {
-    // delete health log for crop for farmers
-});
+router.put('/crops-health-logs/:logId', editCropHealthLog); // tested working
 
-router.get('/crops-calender/:userId', (req,res) => {
-    // get crop calendar for farmers
-});
+router.delete('/crops-health-logs/:logId', deleteHealthlog); // tested working
 
-router.get('/crop-calender/:cropId', (req,res) => {
-    // get crop calendar details for crop for farmers
-});
+router.get('/crops-calender/:userId', allCropsCalenders); // tested working
 
-router.get('/crop-yeild-estimate/:cropId', (req,res) => {
-    // get crop yeild estimate for crop for farmers
-});
+router.get('/crop-calender/:cropId', cropCalender); // tested working
 
-router.get('/listings/:userId', (req,res) => {
-    // get listings for farmers
-});
+router.get('/crop-yeild-estimate/:cropId', cropYieldEstimation); // tested working
 
-router.post('/listings/:userId', (req,res) => {
-    // create listing for farmers
-});
+router.get('/listings/:userId', cropListings); // tested working
 
-router.get('/listing/:listingId', (req,res) => {
-    // get listing details for farmers
-});
+router.post('/listings/:cropId', createCropListing ); // tested working
 
-router.put('/listing/:listingId', (req,res) => {
-    // update listing for farmers
-});
+router.get('/listing/:listingId', () => {});
 
-router.delete('/listing/:listingId', (req,res) => {
-    // delete listing for farmers
-});
+router.put('/listing/:listingId', editCropListing); // tested working
 
-router.get('/groups/:userId', (req,res) => {
-    // get groups for farmers
-});
+router.delete('/listing/:listingId', deleteCropListing); // tested working
 
-router.post('/groups/:userId', (req,res) => {
-    // create group for farmers
-});
+router.get('/groups/:userId', searchGroupListings);
 
-router.get('/group/:groupId', (req,res) => {
-    // get group details for farmers
-});
+router.post('/groups/:userId', createGroup);
 
-router.put('/group/:groupId', (req,res) => {
-    // update group for farmers
-});
+router.get('/group/:groupId', groupDetails);
+
+router.put('/group/:groupId', editGroup);
 
 router.delete('/group/:groupId', (req,res) => {
-    // delete group for farmers
+    // Not Needed yet
 });
 
-router.get('/group-invitations/:userId', (req,res) => {
-    // get group invitations for farmers
+router.delete('/remove-group-participants',(req,res) => {
+    // remove participants by farmer
 });
 
-router.post('/send-group-invitations/:groupId', (req,res) => {
-    // send group invitations for farmers
-});
+router.get('/group-invitations/:userId', listGroupInivitation);
 
-router.post('/send-group-requests/:groupId', (req,res) => {
+router.post('/group-invitaion',createGroupInvitation);
+
+router.get('/group-requests/:groupId', listGroupRequest);
+
+router.post('/group-request', createGroupRequest);
+
+router.get('/accept-reject-group-request/:reqId', (req,res) => {
     // send group requests for farmers
 });
+
+
 
 router.get('/orders/:userId', (req,res) => {
     // get orders for farmers

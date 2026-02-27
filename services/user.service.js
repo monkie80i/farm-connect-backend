@@ -53,12 +53,19 @@ const getUserById = (userId) => {
   return toCamelCaseObject(user);
 };
 
+const userExists = (userId) => {
+  const user = db.prepare(`SELECT Count(*) as count FROM Users WHERE Id = ?`)
+  .get(userId);
+  return user.count === 1;
+};
+
+
 
 
 
 module.exports = {
   editProfileAndIdVerification,
-  getUserById,
+  getUserById,userExists
 };
 
 

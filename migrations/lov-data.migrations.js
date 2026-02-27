@@ -127,4 +127,14 @@ INSERT INTO NotificationPriorityLov (Code, Description) VALUES
 ('ACTION', 'Action Required'),
 ('URGENT', 'Urgent');
 
+INSERT INTO CropStageCaps (StageName,Cap) VALUES
+    ('LAND',0.6),
+    ('SOW',0.6),
+    ('GERM',0.6),
+    ('GROW',0.75),
+    ('FLOW',0.85),
+    ('FRUIT',0.95),
+    ('MAT',1.0),
+    ('HARW',1.0);
+
 `);

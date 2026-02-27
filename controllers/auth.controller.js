@@ -1,6 +1,9 @@
 const authService = require("../services/auth.services");
 const jwt = require("jsonwebtoken");
 const SECRET_KEY = process.env.JWT_SECRET;
+const db = require('../db');
+const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
+
 
 const registerFarmer = (req, res) => {
   try {
@@ -18,6 +21,7 @@ const registerFarmer = (req, res) => {
     const emailExists = authService.checkEmailExists(email);
     if (emailExists) {
       res.status(409).json({ message: "Email Already Exists", data: null });
+      return errorResponse(res,"Email Already Exists",409)
     }
 
     const username = authService.createRandomUserName(firstName, lastName);
@@ -33,10 +37,10 @@ const registerFarmer = (req, res) => {
       dateOfBirth,
     );
 
-    res.status(200).json({ message: "success", data: userId });
+    return successResponse(res,userId);
   } catch (error) {
     console.log("user/register", error);
-    res.status(500).json({ message: "Something went wrong!", error: error });
+    return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 };
 
@@ -61,10 +65,26 @@ const loginUser = (req, res) => {
 
     } catch (error) {
       console.log("user/register", error);
-      res.status(500).json({ message: "Something went wrong!", error: error });
+      return errorResponse(res,"Something went wrong!",500,error.toString());
     }
 };
 
+const runsql = (req,res) => {
+  try {
+    const query = req.body.query;
+    console.log(query)
+    const stmnt = db.prepare(query);
+    const result = stmnt.all();
+    console.log(result)
+
+    res.status(200).json({ message: "success", data: result })
+    
+  } catch (error) {
+    console.log("user/runsql", error);
+      return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
 module.exports = {
-  registerFarmer,loginUser
+  registerFarmer,loginUser,runsql
 };

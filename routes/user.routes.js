@@ -7,7 +7,8 @@ const {
     editProfileAndIdVerfication,
     getUserDetails,
     getUserProfileDetails,
-    editUserDetails,editProfileDetails
+    editUserDetails,editProfileDetails,
+    getAllUserNegotiations
 } = require("../controllers/user.controller");
 
 router.post("/:userId/id-verification", editProfileAndIdVerfication ); // tested working
@@ -18,9 +19,7 @@ router.put("/:userId", editUserDetails ); // tested working
 router.get("/:userId/profile", getUserProfileDetails); // tested working
 router.put("/:userId/profile", editProfileDetails ); // tested working
 
-router.get('/all-negotiations/:userId', (req,res) => {
-    // get all negotiations for farmers
-});
+router.get('/:userId/all-negotiations', getAllUserNegotiations);
 
 router.post('/order-disputes', (req,res) => {
     // get order dispute details for Admin
