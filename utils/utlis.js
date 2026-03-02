@@ -103,6 +103,39 @@ const convertToAcre = (value, unit) => {
   return acres;
 }
 
+/**
+ * Returns a date string N days from given date.
+ * @param {Date|string|null} inputDate  (optional) JS Date or date string
+ * @param {number} days  Number of days to add (default 5)
+ * @param {boolean} fullISO  true => full ISO, false => only YYYY-MM-DD
+ */
+function getFutureDateISO(inputDate = null, days = 5, fullISO = false) {
+    // Step 1: normalize input
+    let baseDate = inputDate ? new Date(inputDate) : new Date();
+
+    if (isNaN(baseDate)) {
+        throw new Error("Invalid date passed");
+    }
+
+    // Step 2: create UTC date (THIS avoids timezone bugs)
+    const utcDate = new Date(Date.UTC(
+        baseDate.getUTCFullYear(),
+        baseDate.getUTCMonth(),
+        baseDate.getUTCDate()
+    ));
+
+    // Step 3: add days safely
+    utcDate.setUTCDate(utcDate.getUTCDate() + days);
+
+    // Step 4: output
+    if (fullISO) {
+        return utcDate.toISOString();
+    }
+
+    // only date part
+    return utcDate.toISOString().split("T")[0];
+}
+
 module.exports = {
   toCamelCaseObject,
   formatSQLValue,
@@ -111,5 +144,6 @@ module.exports = {
   compareDates,
   getTodayDate,
   daysBetween,
-  convertToAcre
+  convertToAcre,
+  getFutureDateISO
 };

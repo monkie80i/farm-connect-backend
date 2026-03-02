@@ -22,6 +22,7 @@ const LOVs = [
     "AlertPriorityLov",
     "NotificationTypeLov",
     "NotificationPriorityLov",
+    "ReportGenerationStatusLov",
 ]
 
 for (const tableName of LOVs) {

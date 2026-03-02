@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getFarmerDashboard } = require('../controllers/farmer-controllers/farmer.controller');
+const { getFarmerDashboard } = require('../controllers/farmer.controller');
 const {
     getFarmerCrops,
     getCropDetails,
@@ -13,20 +13,20 @@ const {
     allCropsCalenders,
     cropCalender,
     cropYieldEstimation
-} = require('../controllers/farmer-controllers/crop.controller');
+} = require('../controllers/crop.controller');
 const {
     cropHealthLogs,
     createHealthLog,
     editCropHealthLog,
     deleteHealthlog
-} = require('../controllers/farmer-controllers/health-log-controllers');
+} = require('../controllers/health-log-controllers');
 
 const {
     cropListings,
     createCropListing,
     editCropListing,
     deleteCropListing,
-} = require('../controllers/farmer-controllers/listing.controller');
+} = require('../controllers/listing.controller');
 
 const {
     searchGroupListings,
@@ -36,9 +36,25 @@ const {
     listGroupInivitation,
     createGroupInvitation,
     listGroupRequest,
-    createGroupRequest
-} = require('../controllers/farmer-controllers/group.controller');
+    createGroupRequest,
+    acceptRejectGroupRequest
+} = require('../controllers/group.controller');
 
+const {getOrders,createOrder,orderDetails} = require('../controllers/order.controller');
+
+const {
+    createNegotiation,
+  negotiationDetails,
+  updateNegotiation,
+  listNegotiationHistory,
+  createNegotiationHistory,
+  accepNegotiation,
+  negotiations
+} = require("../controllers/negotiation.controller");
+
+const { genFarmerReports } = require("../controllers/reports.controller");
+
+// START ROUTES DEFENITION
 
 router.get('/dashboard/:userId', getFarmerDashboard); // tested working
 
@@ -94,9 +110,7 @@ router.get('/group/:groupId', groupDetails);
 
 router.put('/group/:groupId', editGroup);
 
-router.delete('/group/:groupId', (req,res) => {
-    // Not Needed yet
-});
+// router.delete('/group/:groupId', (req,res) => {});
 
 router.delete('/remove-group-participants',(req,res) => {
     // remove participants by farmer
@@ -110,52 +124,28 @@ router.get('/group-requests/:groupId', listGroupRequest);
 
 router.post('/group-request', createGroupRequest);
 
-router.get('/accept-reject-group-request/:reqId', (req,res) => {
-    // send group requests for farmers
-});
+router.post('/accept-reject-group-request', acceptRejectGroupRequest);
+
+router.get('/orders/:userId', getOrders);
+
+router.post('/orders/:userId', createOrder);
+
+router.get('/order/:orderId', orderDetails);
+
+// router.put('/order/:orderId', (req,res) => {}); // not needed for now
+
+// router.delete('/order/:orderId', (req,res) => {}); // not needed for now
 
 
+router.get('/negotiations/:listingId', negotiations);
 
-router.get('/orders/:userId', (req,res) => {
-    // get orders for farmers
-});
+router.post('/negotiations/:listingId', createNegotiation);
 
-router.post('/orders/:userId', (req,res) => {
-    // create order for farmers
-});
+router.get('/negotiation-history/:negotiationId', listNegotiationHistory);
 
-router.get('/order/:orderId', (req,res) => {
-    // get order details for farmers
-});
+router.post('/negotiation-accept/:negotiationId', accepNegotiation);
 
-router.put('/order/:orderId', (req,res) => {
-    // update order for farmers
-});
-
-router.delete('/order/:orderId', (req,res) => {
-    // delete order for farmers
-});
-
-
-router.get('/negotiations/:listingId', (req,res) => {
-    // get negotiations for farmers
-});
-
-router.post('/negotiations/:listingId', (req,res) => {
-    // create negotiation for farmers
-});
-
-router.get('/negotiation-history/:negotiationId', (req,res) => {
-    // get negotiation history for farmers
-});
-
-router.post('/negotiation-accept/:negotiationId', (req,res) => {
-    // accept negotiation for farmers
-});
-
-router.post('/generate-reports/:userId', (req,res) => {
-    // generate reports for farmers
-});
+router.post('/generate-reports', genFarmerReports);
 
 
 

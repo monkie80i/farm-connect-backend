@@ -3,11 +3,14 @@ const {
   toCamelCaseObject,
   addDate,
   getTodayDate,
-  convertToAcre
+  convertToAcre,
 } = require("../../utils/utlis");
-const {successResponse,errorResponse,notFound} = require("../../responses/api.responses");
+const {
+  successResponse,
+  errorResponse,
+  notFound,
+} = require("../../responses/api.responses");
 const { userExists } = require("../../services/user.service");
-
 
 const searchGroupListings = (req, res) => {
   try {
@@ -37,15 +40,17 @@ const searchGroupListings = (req, res) => {
     }
     // Note: CropType is not in GroupListing table, you may need to JOIN with Crop table
 
-    const whereClause = whereConditions.length > 0 
-      ? `WHERE ${whereConditions.join(' AND ')}` 
-      : '';
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
     // Add pagination params
     params.push(pageSize, offset);
 
     const groups = db
-      .prepare(`
+      .prepare(
+        `
         SELECT 
           g.*,
           c.Type as CropType,
@@ -54,7 +59,8 @@ const searchGroupListings = (req, res) => {
         ${whereClause}
         ORDER BY g.CreatedDate DESC
         LIMIT ? OFFSET ?
-      `)
+      `,
+      )
       .all(...params);
 
     // Get total count for pagination
@@ -62,7 +68,7 @@ const searchGroupListings = (req, res) => {
       `SELECT COUNT(DISTINCT g.Id) as total 
        FROM GroupListing g
        LEFT JOIN Crop c ON g.CropId = c.Id
-       ${whereClause}`
+       ${whereClause}`,
     );
     const countParams = params.slice(0, -2); // Remove LIMIT/OFFSET params
     const { total } = countStmnt.get(...countParams);
@@ -73,10 +79,9 @@ const searchGroupListings = (req, res) => {
         page,
         pageSize,
         total,
-        totalPages: Math.ceil(total / pageSize)
-      }
+        totalPages: Math.ceil(total / pageSize),
+      },
     });
-
   } catch (error) {
     console.log("searchGroupListings", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
@@ -95,9 +100,8 @@ const createGroup = (req, res) => {
       unit,
       groupAvailabilityDate,
       startDate,
-      createdUser
+      createdUser,
     } = req.body;
-
 
     // Check if user exists
     if (!userExists(createdUser)) {
@@ -130,7 +134,7 @@ const createGroup = (req, res) => {
         adminContribution,
         minRequiredQuantity,
         totalRequiredQuantity,
-        'FORM',
+        "FORM",
         pricePerUnit,
         unit,
         groupAvailabilityDate,
@@ -138,7 +142,7 @@ const createGroup = (req, res) => {
         getTodayDate(),
         1, // NumberOfParticipants starts with 1 (the creator)
         createdUser,
-        new Date().toISOString()
+        new Date().toISOString(),
       );
 
       return result.lastInsertRowid;
@@ -146,7 +150,12 @@ const createGroup = (req, res) => {
 
     const groupId = createGroupTransaction();
 
-    return successResponse(res, { groupId }, "Group created successfully!", 201);
+    return successResponse(
+      res,
+      { groupId },
+      "Group created successfully!",
+      201,
+    );
   } catch (error) {
     console.log("createGroup", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
@@ -159,14 +168,16 @@ const groupDetails = (req, res) => {
 
     // Fetch group details with crop type and participant count
     const group = db
-      .prepare(`
+      .prepare(
+        `
         SELECT 
           g.*,
           c.Type as CropType,
         FROM GroupListing g
         LEFT JOIN Crop c ON g.CropId = c.Id
         WHERE g.Id = ?;
-      `)
+      `,
+      )
       .get(groupId);
 
     if (!group) {
@@ -175,7 +186,8 @@ const groupDetails = (req, res) => {
 
     // Fetch all participants in the group
     const participants = db
-      .prepare(`
+      .prepare(
+        `
         SELECT 
           gp.Id,
           gp.UserId,
@@ -192,14 +204,14 @@ const groupDetails = (req, res) => {
         LEFT JOIN Users u ON gp.UserId = u.Id
         WHERE gp.GroupId = ?
         ORDER BY gp.JoinedDate DESC
-      `)
+      `,
+      )
       .all(groupId);
 
     return successResponse(res, {
       ...toCamelCaseObject(group),
-      participants: toCamelCaseObject(participants)
+      participants: toCamelCaseObject(participants),
     });
-
   } catch (error) {
     console.log("groupDetails", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
@@ -219,7 +231,7 @@ const editGroup = (req, res) => {
       unit,
       groupAvailabilityDate,
       startDate,
-      updatedUser
+      updatedUser,
     } = req.body;
 
     // Check if group exists
@@ -286,10 +298,11 @@ const editGroup = (req, res) => {
     // Add groupId to params for WHERE clause
     params.push(groupId);
 
-    if (updateFields.length > 2) { // More than just UpdatedUser and UpdatedDate
+    if (updateFields.length > 2) {
+      // More than just UpdatedUser and UpdatedDate
       const updateStmnt = db.prepare(`
         UPDATE GroupListing
-        SET ${updateFields.join(', ')}
+        SET ${updateFields.join(", ")}
         WHERE Id = ?;
       `);
 
@@ -297,28 +310,31 @@ const editGroup = (req, res) => {
     }
 
     return successResponse(res);
-
   } catch (error) {
     console.log("editGroup", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const listGroupInivitation = (req,res) => {
+const listGroupInivitation = (req, res) => {
   try {
     let page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
 
     const userId = Number(req.params.userId);
-    const result = db.prepare(`
+    const result = db
+      .prepare(
+        `
       SELECT * FROM GroupInvitation WHERE InvitedUserId = ? LIMIT ? OFFSET ?;
-    `).all(userId,pageSize,offset);
+    `,
+      )
+      .all(userId, pageSize, offset);
 
     const countStmnt = db.prepare(
       `SELECT COUNT(DISTINCT Id) as total 
        FROM GroupInvitation
-       WHERE InvitedUserId = ?`
+       WHERE InvitedUserId = ?`,
     );
     const { total } = countStmnt.get(userId);
 
@@ -328,8 +344,8 @@ const listGroupInivitation = (req,res) => {
         page,
         pageSize,
         total,
-        totalPages: Math.ceil(total / pageSize)
-      }
+        totalPages: Math.ceil(total / pageSize),
+      },
     });
   } catch (error) {
     console.log("listGroupInivitation", error);
@@ -337,22 +353,17 @@ const listGroupInivitation = (req,res) => {
   }
 };
 
-const createGroupInvitation = (req,res) => {
+const createGroupInvitation = (req, res) => {
   try {
-    const {
-      groupId,
-      invitedUserId,
-      invitedUserCropId,
-      message,
-      createdUser
-    } = json.body;
+    const { groupId, invitedUserId, invitedUserCropId, message, createdUser } =
+      json.body;
 
     const checkCropStmtn = db.prepare(`
       SELECT FarmerId as farmerId FROM Crop WHERE Id = ?;  
     `);
     const checkCrop = checkCropStmtn.get(invitedUserCropId);
-    if(checkCrop.farmerId !== invitedUserId){
-      return errorResponse(res,"Crop Doesnt Belong to the Farmer",400);
+    if (checkCrop.farmerId !== invitedUserId) {
+      return errorResponse(res, "Crop Doesnt Belong to the Farmer", 400);
     }
 
     const stmnt = db.prepare(`
@@ -365,7 +376,7 @@ const createGroupInvitation = (req,res) => {
       invitedUserId,
       invitedUserCropId,
       message,
-      createdUser
+      createdUser,
     );
 
     return successResponse(res, result.lastInsertRowid);
@@ -375,21 +386,25 @@ const createGroupInvitation = (req,res) => {
   }
 };
 
-const listGroupRequest = (req,res) => {
+const listGroupRequest = (req, res) => {
   try {
     let page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
 
     const groupId = Number(req.params.groupId);
-    const result = db.prepare(`
+    const result = db
+      .prepare(
+        `
       SELECT * FROM GroupRequests WHERE GroupId = ? LIMIT ? OFFSET ?;
-    `).all(groupId,pageSize,offset);
+    `,
+      )
+      .all(groupId, pageSize, offset);
 
     const countStmnt = db.prepare(
       `SELECT COUNT(DISTINCT Id) as total 
        FROM GroupRequests
-       WHERE InvitedUserId = ?`
+       WHERE InvitedUserId = ?`,
     );
     const { total } = countStmnt.get(groupId);
 
@@ -399,17 +414,16 @@ const listGroupRequest = (req,res) => {
         page,
         pageSize,
         total,
-        totalPages: Math.ceil(total / pageSize)
-      }
+        totalPages: Math.ceil(total / pageSize),
+      },
     });
-    
   } catch (error) {
     console.log("listGroupRequest", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const createGroupRequest = (req,res) => {
+const createGroupRequest = (req, res) => {
   try {
     const {
       groupId,
@@ -418,7 +432,7 @@ const createGroupRequest = (req,res) => {
       message,
       contributingQuantity,
       contributingQuantityUnit,
-      createdUser
+      createdUser,
     } = json.body;
 
     const stmnt = db.prepare(`
@@ -434,29 +448,82 @@ const createGroupRequest = (req,res) => {
       message,
       contributingQuantity,
       contributingQuantityUnit,
-      createdUser
+      createdUser,
     );
 
     return successResponse(res, result.lastInsertRowid);
-    
   } catch (error) {
     console.log("createGroupRequest", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const acceptRejectGroupRequest = (req,res) => {
+const acceptRejectGroupRequest = (req, res) => {
   try {
-    
+    const { userId, groupRequestId, decission } = req.body;
+
+    if(!["ACCEPT","REJECT"].includes(decission)){
+      return errorResponse(res, "Decission Invalid", 403);
+    }
+
+    const group = toCamelCaseObject(
+      db.prepare(`SELECT * FROM GroupListing WHERE Id = ?`).get(userId),
+    );
+    if (group.createdUser !== userId) {
+      return errorResponse(res, "Group doesnt belog to the user", 403);
+    }
+
+    const groupReqAcceptTransaction = db.transaction(() => {
+      const stmnt = db.prepare(`
+        UPDATE GroupRequests SET
+        Decission = ?
+        UpdatedDate = CURRENT_TIMESTAMP
+        WHERE Id = ?
+      `);
+      stmnt.run(decission, groupRequestId);
+
+      if (decission === "ACCEPT") {
+        const stmnt2 = db.prepare(`
+          INSERT INTO GroupParticipants
+          (UserId,CropId,GroupId,ContributionQuantity,
+          contributingQuantityUnit, JoinedDate)
+          VALUES (?,?,?,?,?,?);
+        `);
+        stmnt2.run(
+          group.requestingUserId,
+          group.requestingUserCropId,
+          group.id,
+          group.contributingQuantity,
+          group.contributingQuantityUnit,
+          new Date().toISOString(),
+        );
+      }
+    });
+
+    groupReqAcceptTransaction();
+    return successResponse(res)
   } catch (error) {
     console.log("acceptRejectGroupRequest", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
-}
-
+};
 
 /**
  * 
+ * 
+ * CREATE TABLE IF NOT EXISTS GroupParticipants (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        UserId INTEGER,
+        CropId INTEGER,
+        GroupId INTEGER,
+        ContributionQuantity FLOAT,
+        contributingQuantityUnit NVARCHAR(10),
+        JoinedDate DATETIME,
+        UpdatedDate DATETIME,
+        FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE SET NULL,
+        FOREIGN KEY (CropId) REFERENCES Crop(Id) ON DELETE SET NULL,
+        FOREIGN KEY (GroupId) REFERENCES GroupListing(Id) ON DELETE SET NULL
+    );
  * CREATE TABLE IF NOT EXISTS GroupRequests (
         Id INTEGER PRIMARY KEY AUTOINCREMENT,
         GroupId INTEGER,
@@ -491,7 +558,6 @@ const acceptRejectGroupRequest = (req,res) => {
     );
  */
 
-
 module.exports = {
   searchGroupListings,
   createGroup,
@@ -501,6 +567,5 @@ module.exports = {
   createGroupInvitation,
   listGroupRequest,
   createGroupRequest,
-  acceptRejectGroupRequest
+  acceptRejectGroupRequest,
 };
-    
