@@ -1,13 +1,14 @@
-const db = require("../../db");
+const db = require("../db");
 const {
   toCamelCaseObject,
   addDate,
   getTodayDate,
-  convertToAcre
-} = require("../../utils/utlis");
-const { successResponse, errorResponse, notFound} = require("../../responses/api.responses");
-const { userExists } = require("../../services/user.service");
-const { calculateYieldEstimation,computeYieldFactors } = require("../../services/yeild-est.services");
+  convertToAcre,
+  formatSQLValue
+} = require("../utils/utlis");
+const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
+const { userExists } = require("../services/user.service");
+const { calculateYieldEstimation,computeYieldFactors } = require("../services/yeild-est.services");
 
 
 const getFarmerCrops = (req, res) => {
@@ -389,7 +390,256 @@ const cropYieldEstimation = (req,res) =>{
   }
 };
 
+const getCropTypes = (req,res) => {
+  try {
+    const cropTypes = db.prepare(`
+      SELECT * FROM CropType;
+      `).all();
+    
+      return successResponse(res,cropTypes);
+  } catch (error) {
+    console.log("getCropTypes", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
 
+
+const createCropTypes = (req,res) => {
+  try {
+    const { cropName, scientificName, isPerennial} = req.body;
+
+    const cropTypes = db.prepare(`
+      INSERT INTO CropType(CropName,ScientificName,IsPerennial)
+      VALUES (?,?,?)
+      `).run(
+        formatSQLValue(cropName),formatSQLValue(scientificName),formatSQLValue(isPerennial)
+      );
+    
+    return successResponse(res,cropTypes.lastInsertRowid);
+  } catch (error) {
+    console.log("createCropTypes", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+
+const getCropType = (req,res) => {
+  try {
+    const cropTypeId = req.params.cropTypeId;
+    const cropType = db.prepare(`
+      SELECT * FROM CropType WHERE Id = ?;
+      `).get(cropTypeId);
+    
+      return successResponse(res,cropType);
+  } catch (error) {
+    console.log("getCropType", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+const deleteCropType = (req, res) => {
+  // tested Working
+  try {
+    const cropTypeId = Number(req.params.cropTypeId);
+    const stmt = db.prepare(`DELETE FROM CropType WHERE Id = ?`);
+    const result = stmt.run(cropTypeId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ message: "Crop Type not found!", data: null });
+    }
+
+    return successResponse(res,null,"Crop Type deleted successfully!");
+  } catch (error) {
+    console.log("deleteCropType", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+const getCropVarieities = (req,res) => {
+  try {
+    const result = db.prepare(`
+      SELECT * FROM CropVariety;
+      `).all();
+    
+      return successResponse(res,result);
+  } catch (error) {
+    console.log("getCropVarieities", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+
+const createCropVarieities = (req,res) => {
+  try {
+    const { 
+      cropTypeId,
+      varietyName,
+      maturityMinDays,
+      maturityMaxDays,
+      yieldPerAcre,
+      shelfLifeDays,
+      isHybrid,
+      notes,
+      userId
+    } = req.body;
+
+    const cropVarieities = db.prepare(`
+      INSERT INTO CropVariety(
+        CropTypeId,
+        VarietyName,
+        MaturityMinDays,
+        MaturityMaxDays,
+        YieldPerAcre,
+        ShelfLifeDays,
+        IsHybrid,
+        Notes,
+        CreatedUser
+      )
+      VALUES (?,?,?,?,?,?,?,?,?)
+      `).run(
+        formatSQLValue(cropTypeId),
+        formatSQLValue(varietyName),
+        formatSQLValue(maturityMinDays),
+        formatSQLValue(maturityMaxDays),
+        formatSQLValue(yieldPerAcre),
+        formatSQLValue(shelfLifeDays),
+        formatSQLValue(isHybrid),
+        formatSQLValue(notes),
+        formatSQLValue(userId)
+      );
+    
+    return successResponse(res,cropVarieities.lastInsertRowid);
+  } catch (error) {
+    console.log("createCropVarieities", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+
+const getCropVarieity = (req,res) => {
+  try {
+    const cropVarietyId = req.params.cropVarietyId;
+    const result = db.prepare(`
+      SELECT * FROM CropVariety WHERE Id = ?;
+      `).get(cropVarietyId);
+    
+      return successResponse(res,result);
+  } catch (error) {
+    console.log("getCropVarieity", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+const deleteCropVarieity = (req, res) => {
+  try {
+    const cropVarietyId = Number(req.params.cropVarietyId);
+    const stmt = db.prepare(`DELETE FROM CropVariety WHERE Id = ?`);
+    const result = stmt.run(cropVarietyId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ message: "Crop Variety not found!", data: null });
+    }
+
+    return successResponse(res,null,"Crop Variety deleted successfully!");
+  } catch (error) {
+    console.log("deleteCropVarieity", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+// ---
+
+const getCropLifeCycleStages = (req,res) => {
+  try {
+    const result = db.prepare(`
+      SELECT * FROM CropVariety;
+      `).all();
+    
+      return successResponse(res,result);
+  } catch (error) {
+    console.log("getCropLifeCycleStages", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+
+const createCropLifeCycleStage = (req,res) => {
+  try {
+    const { 
+      cropTypeId,
+      varietyName,
+      maturityMinDays,
+      maturityMaxDays,
+      yieldPerAcre,
+      shelfLifeDays,
+      isHybrid,
+      notes,
+      userId
+    } = req.body;
+
+    const cropVarieities = db.prepare(`
+      INSERT INTO CropVariety(
+        CropTypeId,
+        VarietyName,
+        MaturityMinDays,
+        MaturityMaxDays,
+        YieldPerAcre,
+        ShelfLifeDays,
+        IsHybrid,
+        Notes,
+        CreatedUser
+      )
+      VALUES (?,?,?,?,?,?,?,?,?)
+      `).run(
+        formatSQLValue(cropTypeId),
+        formatSQLValue(varietyName),
+        formatSQLValue(maturityMinDays),
+        formatSQLValue(maturityMaxDays),
+        formatSQLValue(yieldPerAcre),
+        formatSQLValue(shelfLifeDays),
+        formatSQLValue(isHybrid),
+        formatSQLValue(notes),
+        formatSQLValue(userId)
+      );
+    
+    return successResponse(res,cropVarieities.lastInsertRowid);
+  } catch (error) {
+    console.log("createCropLifeCycleStages", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+
+const getCropLifeCycleStage = (req,res) => {
+  try {
+    const cropVarietyId = req.params.cropVarietyId;
+    const result = db.prepare(`
+      SELECT * FROM CropVariety WHERE Id = ?;
+      `).get(cropVarietyId);
+    
+      return successResponse(res,result);
+  } catch (error) {
+    console.log("getCropLifeCycleStage", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
+const deleteCropLifeCycleStage = (req, res) => {
+  try {
+    const cropVarietyId = Number(req.params.cropVarietyId);
+    const stmt = db.prepare(`DELETE FROM CropVariety WHERE Id = ?`);
+    const result = stmt.run(cropVarietyId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ message: "Crop Variety not found!", data: null });
+    }
+
+    return successResponse(res,null,"Crop Variety deleted successfully!");
+  } catch (error) {
+    console.log("deleteCropLifeCycleStage", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
 
 
 module.exports = {
@@ -404,4 +654,13 @@ module.exports = {
   allCropsCalenders,
   cropCalender,
   cropYieldEstimation,
+  getCropTypes,
+  createCropTypes,
+  getCropType,
+  deleteCropType,
+  getCropVarieities,
+  createCropVarieities,
+  getCropVarieity,
+  deleteCropVarieity
+
 };

@@ -1,12 +1,12 @@
 const db = require("../db");
-const { toCamelCaseObject, formatSQLValue } = require("../../utils/utlis");
+const { toCamelCaseObject, formatSQLValue } = require("../utils/utlis");
 const {
   successResponse,
   errorResponse,
   notFound,
-} = require("../../responses/api.responses");
+} = require("../responses/api.responses");
 
-const negotiations = (res, res) => {
+const negotiations = (req, res) => {
   try {
     const listingId = Number(req.params.listingId);
 
@@ -23,10 +23,11 @@ const negotiations = (res, res) => {
   }
 };
 
-const createNegotiation = (res, res) => {
+const createNegotiation = (req, res) => {
   try {
     const listingId = Number(req.params.listingId);
     const { initialPrice, createdUser } = req.body;
+    // only once per listing per buyer
 
     const stmnt = db.prepare(`
         INSERT INTO Negotiation (ListingId,InitialPrice,CreatedUser)
@@ -34,13 +35,14 @@ const createNegotiation = (res, res) => {
     `);
 
     const result = stmnt.run(listingId, initialPrice, createdUser);
+    return successResponse(res,result.lastInsertRowid)
   } catch (error) {
     console.log("createNegotiation", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const negotiationDetails = (res, res) => {
+const negotiationDetails = (req, res) => {
   try {
     const negotiationId = Number(req.params.negotiationId);
 
@@ -56,7 +58,7 @@ const negotiationDetails = (res, res) => {
   }
 };
 
-const updateNegotiation = (res, res) => {
+const updateNegotiation = (req, res) => {
   try {
     const negotiationId = Number(req.params.negotiationId);
     const { currentPrice, finalPrice, isAccepted, acceptedBy } = req.body;
@@ -100,7 +102,7 @@ const updateNegotiation = (res, res) => {
   }
 };
 
-const listNegotiationHistory = (res, res) => {
+const listNegotiationHistory = (req, res) => {
   try {
     const negotiationId = Number(req.params.negotiationId);
     const stmnt = db.prepare(`SELECT * FROM NegotiationHistory WHERE NegotiationId = ?`);
@@ -112,7 +114,7 @@ const listNegotiationHistory = (res, res) => {
   }
 };
 
-const createNegotiationHistory = (res, res) => {
+const createNegotiationHistory = (req, res) => {
   try {
     const negotiationId = Number(req.params.negotiationId);
 

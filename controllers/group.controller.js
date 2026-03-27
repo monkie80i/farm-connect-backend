@@ -1,28 +1,26 @@
-const db = require("../../db");
+const db = require("../db");
 const {
   toCamelCaseObject,
-  addDate,
-  getTodayDate,
-  convertToAcre,
-} = require("../../utils/utlis");
+  getTodayDate,formatSQLValue
+} = require("../utils/utlis");
 const {
   successResponse,
   errorResponse,
   notFound,
-} = require("../../responses/api.responses");
-const { userExists } = require("../../services/user.service");
+} = require("../responses/api.responses");
+const { userExists } = require("../services/user.service");
 
 const searchGroupListings = (req, res) => {
+  // tested working
   try {
     // Pagination from query params
     let page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
 
-    // Optional filters from query params
+    // Optional Filters
     const { crop, createdUser, cropType, status } = req.query;
 
-    // Build dynamic WHERE clause
     let whereConditions = [];
     let params = [];
 
@@ -38,8 +36,11 @@ const searchGroupListings = (req, res) => {
       whereConditions.push(`g.Status = ?`);
       params.push(status);
     }
-    // Note: CropType is not in GroupListing table, you may need to JOIN with Crop table
-
+    if (cropType) {
+      whereConditions.push(`c.CropTypeId = ?`);
+      params.push(cropType);
+    }
+    
     const whereClause =
       whereConditions.length > 0
         ? `WHERE ${whereConditions.join(" AND ")}`
@@ -47,13 +48,13 @@ const searchGroupListings = (req, res) => {
 
     // Add pagination params
     params.push(pageSize, offset);
+    console.log(whereClause)
 
     const groups = db
       .prepare(
         `
         SELECT 
-          g.*,
-          c.Type as CropType,
+        g.*,c.CropTypeId as CropType
         FROM GroupListing g
         LEFT JOIN Crop c ON g.CropId = c.Id
         ${whereClause}
@@ -89,6 +90,7 @@ const searchGroupListings = (req, res) => {
 };
 
 const createGroup = (req, res) => {
+  // tested working
   try {
     const {
       name,
@@ -165,14 +167,10 @@ const createGroup = (req, res) => {
 const groupDetails = (req, res) => {
   try {
     const groupId = Number(req.params.groupId);
-
-    // Fetch group details with crop type and participant count
     const group = db
       .prepare(
         `
-        SELECT 
-          g.*,
-          c.Type as CropType,
+        SELECT g.*,c.CropTypeId as CropType
         FROM GroupListing g
         LEFT JOIN Crop c ON g.CropId = c.Id
         WHERE g.Id = ?;
@@ -219,6 +217,7 @@ const groupDetails = (req, res) => {
 };
 
 const editGroup = (req, res) => {
+  // tested working
   try {
     const groupId = Number(req.params.groupId);
     const {
@@ -317,6 +316,7 @@ const editGroup = (req, res) => {
 };
 
 const listGroupInivitation = (req, res) => {
+  // tested working
   try {
     let page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
@@ -354,14 +354,20 @@ const listGroupInivitation = (req, res) => {
 };
 
 const createGroupInvitation = (req, res) => {
+  // tested working
   try {
-    const { groupId, invitedUserId, invitedUserCropId, message, createdUser } =
-      json.body;
+    const { groupId, invitedUserId, invitedUserCropId, message, createdUser } = req.body;
 
     const checkCropStmtn = db.prepare(`
       SELECT FarmerId as farmerId FROM Crop WHERE Id = ?;  
     `);
     const checkCrop = checkCropStmtn.get(invitedUserCropId);
+
+    if(!checkCrop) {
+      return notFound(res,"Crop Not Found!");
+    }
+
+    console.log(invitedUserId,checkCrop.farmerId )
     if (checkCrop.farmerId !== invitedUserId) {
       return errorResponse(res, "Crop Doesnt Belong to the Farmer", 400);
     }
@@ -387,6 +393,7 @@ const createGroupInvitation = (req, res) => {
 };
 
 const listGroupRequest = (req, res) => {
+  // tested working
   try {
     let page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
@@ -404,7 +411,7 @@ const listGroupRequest = (req, res) => {
     const countStmnt = db.prepare(
       `SELECT COUNT(DISTINCT Id) as total 
        FROM GroupRequests
-       WHERE InvitedUserId = ?`,
+       WHERE GroupId = ?`,
     );
     const { total } = countStmnt.get(groupId);
 
@@ -424,6 +431,7 @@ const listGroupRequest = (req, res) => {
 };
 
 const createGroupRequest = (req, res) => {
+  // tested working
   try {
     const {
       groupId,
@@ -432,23 +440,21 @@ const createGroupRequest = (req, res) => {
       message,
       contributingQuantity,
       contributingQuantityUnit,
-      createdUser,
-    } = json.body;
+    } = req.body;
 
     const stmnt = db.prepare(`
       INSERT INTO GroupRequests 
       (GroupId,RequestingUserId,RequestingUserCropId,Message,
-      ContributingQuantity,ContributingQuantityUnit,CreatedUser)
-      VALUES (?,?,?,?,?,?,?);
+      ContributingQuantity,ContributingQuantityUnit)
+      VALUES (?,?,?,?,?,?);
     `);
     const result = stmnt.run(
-      groupId,
-      requestingUserId,
-      requestingUserCropId,
-      message,
-      contributingQuantity,
-      contributingQuantityUnit,
-      createdUser,
+      formatSQLValue(groupId),
+      formatSQLValue(requestingUserId),
+      formatSQLValue(requestingUserCropId),
+      formatSQLValue(message),
+      formatSQLValue(contributingQuantity),
+      formatSQLValue(contributingQuantityUnit),
     );
 
     return successResponse(res, result.lastInsertRowid);
@@ -459,6 +465,7 @@ const createGroupRequest = (req, res) => {
 };
 
 const acceptRejectGroupRequest = (req, res) => {
+  // tested working
   try {
     const { userId, groupRequestId, decission } = req.body;
 
@@ -466,19 +473,26 @@ const acceptRejectGroupRequest = (req, res) => {
       return errorResponse(res, "Decission Invalid", 403);
     }
 
+    const groupReqStmnt = db.prepare(`SELECT * FROM GroupRequests WHERE Id = ?`);
+    const groupReq = toCamelCaseObject(groupReqStmnt.get(groupRequestId));
+
+    if(!groupReq) {
+      return notFound(res,"Group request not found!");
+    }
+
     const group = toCamelCaseObject(
       db.prepare(`SELECT * FROM GroupListing WHERE Id = ?`).get(userId),
     );
+
     if (group.createdUser !== userId) {
       return errorResponse(res, "Group doesnt belog to the user", 403);
     }
 
     const groupReqAcceptTransaction = db.transaction(() => {
       const stmnt = db.prepare(`
-        UPDATE GroupRequests SET
-        Decission = ?
-        UpdatedDate = CURRENT_TIMESTAMP
-        WHERE Id = ?
+        UPDATE GroupRequests 
+        SET Decission = ?,UpdatedDate = CURRENT_TIMESTAMP
+        WHERE Id = ?;
       `);
       stmnt.run(decission, groupRequestId);
 
@@ -490,12 +504,12 @@ const acceptRejectGroupRequest = (req, res) => {
           VALUES (?,?,?,?,?,?);
         `);
         stmnt2.run(
-          group.requestingUserId,
-          group.requestingUserCropId,
-          group.id,
-          group.contributingQuantity,
-          group.contributingQuantityUnit,
-          new Date().toISOString(),
+          formatSQLValue(groupReq.requestingUserId),
+          formatSQLValue(groupReq.requestingUserCropId),
+          formatSQLValue(groupReq.groupId),
+          formatSQLValue(groupReq.contributingQuantity),
+          formatSQLValue(groupReq.contributingQuantityUnit),
+          formatSQLValue(new Date().toISOString()),
         );
       }
     });

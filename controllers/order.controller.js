@@ -10,8 +10,10 @@ const {
   notFound,
 } = require("../responses/api.responses");
 
-const getOrders = (req, res) => {
+const getOrders = (req, res, role = "Farmer") => {
+  // tested working
   try {
+    const userId = Number(req.params.userId);
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
@@ -26,6 +28,16 @@ const getOrders = (req, res) => {
 
     const whereContions = [];
     const params = [];
+
+    if (userId) {
+      if(role === "Farmer") {
+        whereContions.push("c.FarmerId = ?");
+      } else {
+        whereContions.push("o.CreatedUser = ?");
+      }
+      params.push(formatSQLValue(userId));
+
+    }
 
     if (listerId) {
       whereContions.push("o.ListerId = ?");
@@ -61,8 +73,8 @@ const getOrders = (req, res) => {
       SELECT 
       o.Id,
       o.ListingEntityType,
-      COALESCE (o.ListingId,o.GroupId) as OrderListingId
-      COALESCE (cl.Name,g.Name) as OrderName
+      COALESCE (o.ListingId,o.GroupId) as OrderListingId,
+      COALESCE (c.Name,g.Name) as OrderName,
       buyer.UserName,
       seller.UserName,
       o.Quantity,
@@ -71,11 +83,11 @@ const getOrders = (req, res) => {
       COALESCE (o.ActualFulfillmentDate,o.EstimatedFulfillmentDate) as FullfilmentDate,
       o.UpdatedUser,o.UpdatedDate
       FROM Orders o
-      LEFT JOIN User buyer ON o.BuyerId = buyer.Id
-      LEFT JOIN User seller ON o.ListerId = seller.Id
+      LEFT JOIN Users buyer ON o.BuyerId = buyer.Id
+      LEFT JOIN Users seller ON o.ListerId = seller.Id
       LEFT JOIN CropListing cl ON o.ListingId = cl.Id
       LEFT JOIN Crop c ON cl.CropId = c.Id
-      LEFT JOIN Group g ON o.GroupId = g.Id
+      LEFT JOIN GroupListing g ON o.GroupId = g.Id
       ${whereClause}
       LIMIT ? OFFSET ?;
     `);
@@ -190,10 +202,11 @@ const createOrder = (req, res) => {
 };
 
 const orderDetails = (req,res) => {
+  // tested working
   try {
     const orderId = Number(req.params.orderId);
     const stmnt = db.prepare(`
-      SELECT * FORM Orders WHERE Id = ?
+      SELECT * FROM Orders WHERE Id = ?
     `);
     const order = stmnt.get(orderId);
     if(!order) {

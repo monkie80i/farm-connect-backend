@@ -1,9 +1,9 @@
-const db = require("../../db");
+const db = require("../db");
 const {
   toCamelCaseObject,
   addDate,getTodayDate
-} = require("../../utils/utlis");
-const { successResponse, errorResponse, notFound} = require("../../responses/api.responses");
+} = require("../utils/utlis");
+const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
 
 
 const getFarmerDashboard = (req, res) => {

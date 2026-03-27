@@ -12,9 +12,8 @@ const {
 
 const exportToExcel = require("../services/excel-exporter.service");
 
-const cropWiseYieldGen = async (farmerId,fileName,trackerRecordId) => {
-
-    const stmnt  = db.prepare(`
+const cropWiseYieldGen = async (farmerId, fileName, trackerRecordId) => {
+  const stmnt = db.prepare(`
         SELECT 
         c.Id,c.Name,c.CropTypeId,c.VarietyId,c.FarmId,c.FarmerId,
         c.LandPrepDate,c.SowingDate,c.ExpectedGrowthDurationDays,
@@ -25,57 +24,77 @@ const cropWiseYieldGen = async (farmerId,fileName,trackerRecordId) => {
         WHERE FarmerId = ?;
     `);
 
-    const data = toCamelCaseObject(stmnt.all(farmerId));
+  const data = toCamelCaseObject(stmnt.all(farmerId));
 
-    for (const row of data) {
-        const crop = {...row};
-        const variety = { yieldPerAcre : JSON.parse(JSON.stringify(row.yieldPerAcre))};
-        delete crop.yieldPerAcre;
-        row.yieldEstimate = calculateYieldEstimation(crop,variety);
-    }
+  for (const row of data) {
+    const crop = { ...row };
+    const variety = {
+      yieldPerAcre: JSON.parse(JSON.stringify(row.yieldPerAcre)),
+    };
+    delete crop.yieldPerAcre;
+    row.yieldEstimate = calculateYieldEstimation(crop, variety);
+  }
 
-    // generate a unique name .xls 
+  // generate a unique name .xls
 
-    const filePath = await exportToExcel(data,fileName,"reports/farmer");    
+  const filePath = await exportToExcel(data, fileName, "reports/farmer");
 };
 
-const genFarmerReports = async (req,res) => {
-    try {
-        const {
-            userId,
-            reportType,
-            startDay,
-            endDay
-        } = req.body;
+const genFarmerReports = async (req, res) => {
+  try {
+    const { userId, reportType, startDay, endDay } = req.body;
 
-        const farmerReportTypes = toCamelCaseObject(db.
-            prepare(`SELECT * FROM ReprotType WHERE UserRole = 'FARMER';`).
-            all());
-        
-        if(! farmerReportTypes.map(p => p.code).include(reportType)) {
-            return notFound(res,"Report type not found");
-        }
-        // `users_${Date.now()}`
-        const fileName = `Crop_wise_yeild_report__${userId}_${Date.now()}`;
+    const farmerReportTypes = toCamelCaseObject(
+      db.prepare(`SELECT * FROM ReprotType WHERE UserRole = 'FARMER';`).all(),
+    );
 
-        const createRecordStatement = db.prepare(`
+    if (!farmerReportTypes.map((p) => p.code).include(reportType)) {
+      return notFound(res, "Report type not found");
+    }
+    // `users_${Date.now()}`
+    const fileName = `Crop_wise_yeild_report__${userId}_${Date.now()}`;
+
+    const createRecordStatement = db.prepare(`
             INSERT INTO ReportGenerationTracker 
             (ReportOwnerRole,UserId,ReportType,FileName,Status),
             VALUES (?,?,?,?,?,?,?,?);
         `);
-        const record = createRecordStatement.run(
-            formatSQLValue('FARMER'),
-            formatSQLValue(userId),
-            formatSQLValue(reportType),
-            formatSQLValue(fileName),
-            formatSQLValue("NEW")
-        );
+    const record = createRecordStatement.run(
+      formatSQLValue("FARMER"),
+      formatSQLValue(userId),
+      formatSQLValue(reportType),
+      formatSQLValue(fileName),
+      formatSQLValue("NEW"),
+    );
 
-        return successResponse(res);
-    } catch (error) {
-        console.log("genFarmerReports", error);
-        return errorResponse(res, "Something went wrong!", 500, error.toString());
+    return successResponse(res);
+  } catch (error) {
+    console.log("genFarmerReports", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const downloadReport = (req, res) => {
+  try {
+    const { fileName, userRole } = req.body;
+    let filePath;
+
+    switch (userRole) {
+      case "FARMER":
+        filePath = `../reports/farmer/${fileName}`;
+        break;
+      case "BUYER":
+        filePath = `../reports/buyer/${fileName}`;
+        break;
+      default:
+        filePath = `../reports/admin/${fileName}`;
+        break;
     }
+    res.download(filePath);
+  } catch (error) {
+    console.log("downloadReport", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
 };
 
 /**
@@ -121,4 +140,4 @@ const genFarmerReports = async (req,res) => {
     );
  */
 
-module.exports = {genFarmerReports};
+module.exports = { genFarmerReports,downloadReport };

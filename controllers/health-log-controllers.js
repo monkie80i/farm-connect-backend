@@ -1,8 +1,8 @@
-const db = require("../../db");
+const db = require("../db");
 const {
   toCamelCaseObject,
-} = require("../../utils/utlis");
-const { successResponse, errorResponse, notFound} = require("../../responses/api.responses");
+} = require("../utils/utlis");
+const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
 
 
 const cropHealthLogs = (req, res) => {

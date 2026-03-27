@@ -1,10 +1,10 @@
-const db = require("../../db");
-const { toCamelCaseObject, formatSQLValue } = require("../../utils/utlis");
+const db = require("../db");
+const { toCamelCaseObject, formatSQLValue } = require("../utils/utlis");
 const {
   successResponse,
   errorResponse,
   notFound,
-} = require("../../responses/api.responses");
+} = require("../responses/api.responses");
 
 const cropListings = (req, res) => {
   // tested working

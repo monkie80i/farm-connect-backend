@@ -1,52 +1,52 @@
 const express = require("express");
 const router = express.Router();
+const { 
+    getBuyerDashboard,
+    marketPlaceSearch,
+    getMarketplaceDetails
+} = require("../controllers/buyer.controller");
 
-// dashboard for buyer
-router.get('/dashboard/:userId', (req,res) => {
-    // get dashboar data for buyer
-});
+const {
+    createNegotiation,
+  listNegotiationHistory,
+  createNegotiationHistory,
+  accepNegotiation,
+  negotiations
+} = require("../controllers/negotiation.controller");
 
-router.get('/marketplace', (req,res) => {
-    // get marketplace data for buyer
-});
+const { getOrders,createOrder,orderDetails } = require("../controllers/order.controller");
 
-router.get('/crop-listing/:cropId', (req,res) => {
-    // get crop listing details for buyer
-});
+// ROUTES START HERE
 
-router.post('/start-negotiation/:cropId', (req,res) => {
-    // start negotiation for crop listing for buyer
-});
+router.get('/dashboard/:userId', getBuyerDashboard);
 
-router.get('/negotiations', (req,res) => {
-    // get negotiations for buyer
-});
+router.get('/marketplace', marketPlaceSearch);  
 
-router.get('/negotiation-history/:negotiationId', (req,res) => {
-    // get negotiation history for buyer
-});
+router.get("/marketplace/:listingType/:listingId", getMarketplaceDetails);
 
-router.post('/negotiation-submit-offer/:negotiationId', (req,res) => {
-    // submit offer for negotiation for buyer
-});
+router.post('/negotiations/:listingId', createNegotiation); // tested working
 
-router.get('/negotiation-details/:negotiationId', (req,res) => {
-    // get negotiation details for buyer
-});
+// router.get('/negotiations', (req,res) => {
+//     // get negotiations for buyer
+// });
+router.get('/negotiations/:listingId', negotiations); // tested working
 
-router.post('/place-order', (req,res) => {
-    // place order for listing for buyer
-});
+router.post('/negotiation-history/:negotiationId', createNegotiationHistory); // tested working
 
-router.get('/orders/:userId', (req,res) => {
-    // get orders for buyer
-});
+router.get('/negotiation-history/:negotiationId', listNegotiationHistory); // tested working
 
-router.get('/order/:orderId', (req,res) => {
-    // get order details for buyer
-});
+router.post('/negotiation-accept/:negoHistId', accepNegotiation); // tested working
 
-router.put('/order/:orderId', (req,res) => {
-    // update order for buyer
-});
+router.post('/orders/:userId', createOrder);
+
+router.get('/orders/:userId', getOrders);
+
+router.get('/order/:orderId', orderDetails );
+
+// router.put('/order/:orderId', (req,res) => {}); // not needed for now
+
+// router.delete('/order/:orderId', (req,res) => {}); // not needed for now
+
+module.exports = router;
+
 

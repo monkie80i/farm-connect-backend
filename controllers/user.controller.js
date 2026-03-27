@@ -196,7 +196,6 @@ const editProfileDetails = (req,res) => {
     if(role === "FARMER") {
       const incomingFarms = incomingData.farms && Array.isArray(incomingData.farms) ? incomingData.farms : [];
       const existingFarms = toCamelCaseObject(db.prepare(`SELECT * FROM Farm WHERE UserId = ?;`).all(userId));
-      console.log("existing farms", existingFarms);
 
       const farmsToBeCreated = incomingFarms.filter(farm => !farm.id );
       const farmsToBeUpdated = incomingFarms.filter(farm => farm.id );
@@ -263,9 +262,7 @@ const editProfileDetails = (req,res) => {
 
         cropTypesToBeCreated.forEach(cropType => {
           query = query + `
-            INSERT INTO FarmCropTypes (FarmId, CropTypeId) VALUES
-            (
-              ${farm.id},${cropType.cropTypeId}
+            INSERT INTO FarmCropTypes (FarmId, CropTypeId) VALUES (${farm.id},${cropType.cropTypeId});
           `;
         });
       });
@@ -284,7 +281,6 @@ const editProfileDetails = (req,res) => {
       // payment methods
       const incomingPaymentMethods = incomingData.paymentMethods && Array.isArray(incomingData.paymentMethods) ? incomingData.paymentMethods : [];
       const existingPaymentMethods = toCamelCaseObject(db.prepare(`SELECT * FROM UserPaymentMethod WHERE UserId = ?;`).all(userId));
-      console.log("existing payment methods", existingPaymentMethods);
 
       const paymentMethodsToBeCreated = incomingPaymentMethods.filter(paymentMethod => !paymentMethod.id );
       const paymentMethodsToBeDeleted = existingPaymentMethods.filter((existingPaymentMethod) => {

@@ -102,55 +102,43 @@ router.put('/listing/:listingId', editCropListing); // tested working
 
 router.delete('/listing/:listingId', deleteCropListing); // tested working
 
-router.get('/groups/:userId', searchGroupListings);
+router.get('/groups', searchGroupListings); // tested working
 
-router.post('/groups/:userId', createGroup);
+router.post('/groups/:userId', createGroup); // tested working
 
-router.get('/group/:groupId', groupDetails);
+router.get('/group/:groupId', groupDetails); // tested working
 
-router.put('/group/:groupId', editGroup);
+router.put('/group/:groupId', editGroup); // tested working
 
 // router.delete('/group/:groupId', (req,res) => {});
 
-router.delete('/remove-group-participants',(req,res) => {
-    // remove participants by farmer
-});
+router.get('/group-invitations/:userId', listGroupInivitation); // tested working
 
-router.get('/group-invitations/:userId', listGroupInivitation);
+router.post('/group-invitation',createGroupInvitation); // tested working
 
-router.post('/group-invitaion',createGroupInvitation);
+router.get('/group-requests/:groupId', listGroupRequest); // tested working
 
-router.get('/group-requests/:groupId', listGroupRequest);
+router.post('/group-request', createGroupRequest); // tested working
 
-router.post('/group-request', createGroupRequest);
+router.post('/accept-reject-group-request', acceptRejectGroupRequest); // tested working
 
-router.post('/accept-reject-group-request', acceptRejectGroupRequest);
+// router.delete('/remove-group-participants',(req,res) => {}); // not needed atm
 
-router.get('/orders/:userId', getOrders);
+router.get('/orders/:userId', getOrders); // tested working
 
-router.post('/orders/:userId', createOrder);
+router.get('/order/:orderId', orderDetails); // tested workings
 
-router.get('/order/:orderId', orderDetails);
+router.get('/negotiations/:listingId', negotiations); // tested working
 
-// router.put('/order/:orderId', (req,res) => {}); // not needed for now
+router.post('/negotiations/:listingId', createNegotiation); // tested working
 
-// router.delete('/order/:orderId', (req,res) => {}); // not needed for now
+router.post('/negotiation-history/:negotiationId', createNegotiationHistory); // tested working
 
+router.get('/negotiation-history/:negotiationId', listNegotiationHistory); // tested working
 
-router.get('/negotiations/:listingId', negotiations);
-
-router.post('/negotiations/:listingId', createNegotiation);
-
-router.get('/negotiation-history/:negotiationId', listNegotiationHistory);
-
-router.post('/negotiation-accept/:negotiationId', accepNegotiation);
+router.post('/negotiation-accept/:negoHistId', accepNegotiation); // tested working
 
 router.post('/generate-reports', genFarmerReports);
-
-
-
-
-
 
 
 module.exports = router;
