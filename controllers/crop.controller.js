@@ -4,12 +4,18 @@ const {
   addDate,
   getTodayDate,
   convertToAcre,
-  formatSQLValue
+  formatSQLValue,
 } = require("../utils/utlis");
-const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
+const {
+  successResponse,
+  errorResponse,
+  notFound,
+} = require("../responses/api.responses");
 const { userExists } = require("../services/user.service");
-const { calculateYieldEstimation,computeYieldFactors } = require("../services/yeild-est.services");
-
+const {
+  calculateYieldEstimation,
+  computeYieldFactors,
+} = require("../services/yeild-est.services");
 
 const getFarmerCrops = (req, res) => {
   // tested working
@@ -31,10 +37,10 @@ const getFarmerCrops = (req, res) => {
       )
       .all(userId, pageSize, offset);
 
-    return successResponse(res,toCamelCaseObject(crops));
+    return successResponse(res, toCamelCaseObject(crops));
   } catch (error) {
     console.log("getFarmerCrops", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
@@ -48,10 +54,10 @@ const getCropDetails = (req, res) => {
       return res.status(404).json({ message: "Crop not found!" });
     }
 
-    return successResponse(res,toCamelCaseObject(crop));
+    return successResponse(res, toCamelCaseObject(crop));
   } catch (error) {
     console.log("getCropDetails", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
@@ -71,7 +77,10 @@ const createCrop = (req, res) => {
       initialSoilCondition,
       initialNotes,
     } = req.body;
-    const cultivatedAreaInAcres = convertToAcre(cultivatedArea,cultivatedAreaUnit);
+    const cultivatedAreaInAcres = convertToAcre(
+      cultivatedArea,
+      cultivatedAreaUnit,
+    );
 
     const lifeCycleStmnt = db.prepare(`
       SELECT 
@@ -142,32 +151,34 @@ const createCrop = (req, res) => {
           estEndDate,
         );
 
-        if(stage.stageName === 'HARW') {
+        if (stage.stageName === "HARW") {
           estHarvDate = estStartDate;
         }
       }
 
-      const updateCropStmnt = db.prepare(`UPDATE Crop SET EstdHarvestDate = ? WHERE Id = ?`);
-      updateCropStmnt.run(estHarvDate,savedCropId);
+      const updateCropStmnt = db.prepare(
+        `UPDATE Crop SET EstdHarvestDate = ? WHERE Id = ?`,
+      );
+      updateCropStmnt.run(estHarvDate, savedCropId);
 
       return savedCropId;
     });
 
     const cropId = cropCreatetrnsaction();
-    return successResponse(res,{cropId},"Crop created successfully!",201);
+    return successResponse(res, { cropId }, "Crop created successfully!", 201);
   } catch (error) {
     console.log("createCrop", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
 const editCrop = (req, res) => {
   try {
     // not needed as of now, can be implemented later when we have more details on what can be edited for crop
-    return successResponse(res,null,"Not implemented yet!",200);
+    return successResponse(res, null, "Not implemented yet!", 200);
   } catch (error) {
     console.log("editCrop", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
@@ -182,10 +193,10 @@ const deleteCrop = (req, res) => {
       return res.status(404).json({ message: "Crop not found!", data: null });
     }
 
-    return successResponse(res,null,"Crop deleted successfully!");
+    return successResponse(res, null, "Crop deleted successfully!");
   } catch (error) {
     console.log("deleteCrop", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
@@ -209,13 +220,13 @@ const markCropAsHarvested = (req, res) => {
     );
 
     if (result.changes === 0) {
-      return notFound(res,"Crop not found!")
+      return notFound(res, "Crop not found!");
     }
 
     return successResponse(res);
   } catch (error) {
     console.log("markCropAsHarvested", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
@@ -223,14 +234,18 @@ const getCropLifecycle = (req, res) => {
   // tested working
   try {
     const cropId = Number(req.params.cropId);
-    const stages = db.prepare(`
+    const stages = db
+      .prepare(
+        `
       SELECT * from CropStageProgress WHERE CropId = ? ORDER BY StageOrder ASC;
-    `).all(cropId);
+    `,
+      )
+      .all(cropId);
 
-    return successResponse(res,stages);
+    return successResponse(res, stages);
   } catch (error) {
     console.log("getCropLifecycle", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
@@ -244,7 +259,11 @@ const cropLifecycleStageObserved = (req, res) => {
 
     const today = getTodayDate();
     if (observedDate > today) {
-      return errorResponse(res,"Invalid Date: Obsered Date cannot be in the future",400);
+      return errorResponse(
+        res,
+        "Invalid Date: Obsered Date cannot be in the future",
+        400,
+      );
     }
 
     const getCropStageStmnt = db.prepare(`
@@ -256,8 +275,7 @@ const cropLifecycleStageObserved = (req, res) => {
 
     if (!curntProgState || curntProgState.cropId !== cropId) {
       res.status(404).json({ message: "Crop Stage Not Found", error: null });
-      return notFound(res,"Crop Stage Not Found");
-
+      return notFound(res, "Crop Stage Not Found");
     }
 
     if (curntProgState.stageOrder > 1) {
@@ -277,7 +295,11 @@ const cropLifecycleStageObserved = (req, res) => {
       }
 
       if (!isValid) {
-        return errorResponse(res,"Invalid Date: Inconsitent with previous stages.",400);
+        return errorResponse(
+          res,
+          "Invalid Date: Inconsitent with previous stages.",
+          400,
+        );
       }
     }
 
@@ -304,18 +326,18 @@ const cropLifecycleStageObserved = (req, res) => {
     return successResponse(res);
   } catch (error) {
     console.log("cropLifecycleStageObserved", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const allCropsCalenders = (req,res) => {
+const allCropsCalenders = (req, res) => {
   try {
     const userId = Number(req.params.userId);
 
-    if(!userExists(userId)) {
+    if (!userExists(userId)) {
       return notFound(res, "User Does not Exists");
     }
-    
+
     const stmnt = db.prepare(`
       SELECT 
       c.FarmerId,c.Id as CropId,c.Name as CropName,c.LandPrepDate,c.SowingDate,
@@ -323,21 +345,22 @@ const allCropsCalenders = (req,res) => {
       FROM Crop c JOIN CropStageProgress s ON c.Id = s.CropId WHERE c.FarmerId = ?;
     `);
     const result = toCamelCaseObject(stmnt.all(userId));
-    return successResponse(res,result);
+    return successResponse(res, result);
   } catch (error) {
     console.log("allCropsCalender", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const cropCalender = (req,res) => {
+const cropCalender = (req, res) => {
   try {
     const cropId = Number(req.params.cropId);
-    const crop = db.prepare(`SELECT Count(*) as count FROM Crop WHERE Id = ?`)
-    .get(cropId);
+    const crop = db
+      .prepare(`SELECT Count(*) as count FROM Crop WHERE Id = ?`)
+      .get(cropId);
 
-    if(crop.count !== 1) {
-      return notFound(res,"Crop Does not Exists");
+    if (crop.count !== 1) {
+      return notFound(res, "Crop Does not Exists");
     }
 
     const stmnt = db.prepare(`
@@ -348,14 +371,14 @@ const cropCalender = (req,res) => {
     `);
     const result = toCamelCaseObject(stmnt.all(userid));
 
-    return successResponse(res,result);
+    return successResponse(res, result);
   } catch (error) {
     console.log("cropsCalender", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const cropYieldEstimation = (req,res) =>{
+const cropYieldEstimation = (req, res) => {
   // tested working
   try {
     const cropId = Number(req.params.cropId);
@@ -366,112 +389,116 @@ const cropYieldEstimation = (req,res) =>{
       FROM Crop c JOIN CropVariety v ON c.VarietyId = v.Id WHERE c.Id = ? ;
     `);
     const data = toCamelCaseObject(stmnt.get(cropId));
-    console.log(data)
-    if(!data) {
-      return notFound(res,"Crop Does not Exists");
+    console.log(data);
+    if (!data) {
+      return notFound(res, "Crop Does not Exists");
     }
 
-    crop = {...data};
-    variety = { yieldPerAcre : JSON.parse(JSON.stringify(data.yieldPerAcre))};
+    crop = { ...data };
+    variety = { yieldPerAcre: JSON.parse(JSON.stringify(data.yieldPerAcre)) };
     delete crop.yieldPerAcre;
 
-    const yieldEstimate = calculateYieldEstimation(crop,variety);
+    const yieldEstimate = calculateYieldEstimation(crop, variety);
     const yieldFactors = computeYieldFactors(crop);
 
     const result = {
       ...yieldEstimate,
-      yieldFactors
-    }
+      yieldFactors,
+    };
 
-    return successResponse(res,result);
+    return successResponse(res, result);
   } catch (error) {
     console.log("cropsCalender", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const getCropTypes = (req,res) => {
+const getCropTypes = (req, res) => {
   try {
-    const cropTypes = db.prepare(`
-      SELECT * FROM CropType;
-      `).all();
-    
-      return successResponse(res,cropTypes);
+    const cropTypes = db
+      .prepare(`SELECT * FROM CropType;`)
+      .all();
+
+    return successResponse(res, toCamelCaseObject(cropTypes));
   } catch (error) {
     console.log("getCropTypes", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-
-const createCropTypes = (req,res) => {
+const createCropTypes = (req, res) => {
   try {
-    const { cropName, scientificName, isPerennial} = req.body;
+    const { cropName, scientificName, isPerennial } = req.body;
 
-    const cropTypes = db.prepare(`
+    const cropTypes = db
+      .prepare(
+        `
       INSERT INTO CropType(CropName,ScientificName,IsPerennial)
       VALUES (?,?,?)
-      `).run(
-        formatSQLValue(cropName),formatSQLValue(scientificName),formatSQLValue(isPerennial)
+      `,
+      )
+      .run(
+        formatSQLValue(cropName),
+        formatSQLValue(scientificName),
+        formatSQLValue(isPerennial),
       );
-    
-    return successResponse(res,cropTypes.lastInsertRowid);
+
+    return successResponse(res, cropTypes.lastInsertRowid);
   } catch (error) {
     console.log("createCropTypes", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-
-const getCropType = (req,res) => {
+const getCropType = (req, res) => {
   try {
     const cropTypeId = req.params.cropTypeId;
-    const cropType = db.prepare(`
-      SELECT * FROM CropType WHERE Id = ?;
-      `).get(cropTypeId);
-    
-      return successResponse(res,cropType);
+    const cropType = db
+      .prepare(`SELECT * FROM CropType WHERE Id = ?;`)
+      .get(cropTypeId);
+
+    return successResponse(res, toCamelCaseObject(cropType));
   } catch (error) {
     console.log("getCropType", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
 const deleteCropType = (req, res) => {
-  // tested Working
   try {
     const cropTypeId = Number(req.params.cropTypeId);
     const stmt = db.prepare(`DELETE FROM CropType WHERE Id = ?`);
     const result = stmt.run(cropTypeId);
 
     if (result.changes === 0) {
-      return res.status(404).json({ message: "Crop Type not found!", data: null });
+      return res
+        .status(404)
+        .json({ message: "Crop Type not found!", data: null });
     }
 
-    return successResponse(res,null,"Crop Type deleted successfully!");
+    return successResponse(res, null, "Crop Type deleted successfully!");
   } catch (error) {
     console.log("deleteCropType", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const getCropVarieities = (req,res) => {
+const getCropVarieities = (req, res) => {
   try {
-    const result = db.prepare(`
-      SELECT * FROM CropVariety;
-      `).all();
-    
-      return successResponse(res,result);
+    const result = db
+      .prepare(`SELECT * FROM CropVariety;`)
+      .all();
+
+    return successResponse(res, toCamelCaseObject(result));
   } catch (error) {
     console.log("getCropVarieities", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-
-const createCropVarieities = (req,res) => {
+const createCropVarieities = (req, res) => {
   try {
-    const { 
+    const {
       cropTypeId,
       varietyName,
       maturityMinDays,
@@ -480,10 +507,12 @@ const createCropVarieities = (req,res) => {
       shelfLifeDays,
       isHybrid,
       notes,
-      userId
+      userId,
     } = req.body;
 
-    const cropVarieities = db.prepare(`
+    const cropVarieities = db
+      .prepare(
+        `
       INSERT INTO CropVariety(
         CropTypeId,
         VarietyName,
@@ -496,7 +525,9 @@ const createCropVarieities = (req,res) => {
         CreatedUser
       )
       VALUES (?,?,?,?,?,?,?,?,?)
-      `).run(
+      `,
+      )
+      .run(
         formatSQLValue(cropTypeId),
         formatSQLValue(varietyName),
         formatSQLValue(maturityMinDays),
@@ -505,28 +536,27 @@ const createCropVarieities = (req,res) => {
         formatSQLValue(shelfLifeDays),
         formatSQLValue(isHybrid),
         formatSQLValue(notes),
-        formatSQLValue(userId)
+        formatSQLValue(userId),
       );
-    
-    return successResponse(res,cropVarieities.lastInsertRowid);
+
+    return successResponse(res, cropVarieities.lastInsertRowid);
   } catch (error) {
     console.log("createCropVarieities", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-
-const getCropVarieity = (req,res) => {
+const getCropVarieity = (req, res) => {
   try {
     const cropVarietyId = req.params.cropVarietyId;
-    const result = db.prepare(`
-      SELECT * FROM CropVariety WHERE Id = ?;
-      `).get(cropVarietyId);
-    
-      return successResponse(res,result);
+    const result = db
+      .prepare(`SELECT * FROM CropVariety WHERE Id = ?;`)
+      .get(cropVarietyId);
+
+    return successResponse(res, toCamelCaseObject(result));
   } catch (error) {
     console.log("getCropVarieity", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
@@ -537,110 +567,201 @@ const deleteCropVarieity = (req, res) => {
     const result = stmt.run(cropVarietyId);
 
     if (result.changes === 0) {
-      return res.status(404).json({ message: "Crop Variety not found!", data: null });
+      return res
+        .status(404)
+        .json({ message: "Crop Variety not found!", data: null });
     }
 
-    return successResponse(res,null,"Crop Variety deleted successfully!");
+    return successResponse(res, null, "Crop Variety deleted successfully!");
   } catch (error) {
     console.log("deleteCropVarieity", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-// ---
-
-const getCropLifeCycleStages = (req,res) => {
+const getCropLifeCycleDefenitions = (req, res) => {
   try {
-    const result = db.prepare(`
-      SELECT * FROM CropVariety;
-      `).all();
-    
-      return successResponse(res,result);
+    // const result = db.prepare(`SELECT * FROM CropLifecycleDefinition;`).all();
+
+    const result = db.prepare(`SELECT * FROM CropStagesLov;`).all();
+
+    return successResponse(res, toCamelCaseObject(result));
   } catch (error) {
-    console.log("getCropLifeCycleStages", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    console.log("getCropLifeCycleDefenitions", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-
-const createCropLifeCycleStage = (req,res) => {
+const createCropLifeCycleDefenition = (req, res) => {
   try {
-    const { 
+    const {
       cropTypeId,
-      varietyName,
-      maturityMinDays,
-      maturityMaxDays,
-      yieldPerAcre,
-      shelfLifeDays,
-      isHybrid,
-      notes,
-      userId
+      cropVarietyId,
+      season,
+      region,
+      userId,
+      stages,
     } = req.body;
 
-    const cropVarieities = db.prepare(`
-      INSERT INTO CropVariety(
-        CropTypeId,
-        VarietyName,
-        MaturityMinDays,
-        MaturityMaxDays,
-        YieldPerAcre,
-        ShelfLifeDays,
-        IsHybrid,
-        Notes,
-        CreatedUser
-      )
-      VALUES (?,?,?,?,?,?,?,?,?)
-      `).run(
+    const createLifeCycleDefTrxn = db.transaction(() => {
+
+      const lifecycleDefStmnt = db.prepare(
+        `INSERT INTO CropLifecycleDefinition 
+        (CropTypeId,CropVarietyId,Season,Region,CreatedUser)
+        VALUES (?,?,?,?,?);
+        `
+      );
+      const lcd = lifecycleDefStmnt.run(
         formatSQLValue(cropTypeId),
-        formatSQLValue(varietyName),
-        formatSQLValue(maturityMinDays),
-        formatSQLValue(maturityMaxDays),
-        formatSQLValue(yieldPerAcre),
-        formatSQLValue(shelfLifeDays),
-        formatSQLValue(isHybrid),
-        formatSQLValue(notes),
+        formatSQLValue(cropVarietyId),
+        formatSQLValue(season),
+        formatSQLValue(region),
         formatSQLValue(userId)
       );
-    
-    return successResponse(res,cropVarieities.lastInsertRowid);
+
+      const lifecycleDefId = lcd.lastInsertRowid;
+      console.log(lifecycleDefId)
+      for (const stage of stages) {
+        // needs more validation
+        console.log(stage.stageName,formatSQLValue(stage.stageName))
+        const lifecycleStage = db.prepare(`
+          INSERT INTO CropLifeCycleStages (
+            CropLifecycleDefinitionId,
+            StageName,
+            StageOrder,
+            MinDaysFromPreviousStage,
+            MaxDaysFromPreviousStage,
+            Description
+          )  VALUES (?,?,?,?,?,?);
+        `).run(
+          lifecycleDefId,
+          stage.stageName,
+          stage.stageOrder,
+          stage.minDaysFromPreviousStage,
+          stage.maxDaysFromPreviousStage,
+          stage.description,
+        );
+      };
+
+      return lifecycleDefId;
+    });
+
+    const lifecycleDefId = createLifeCycleDefTrxn();
+
+    return successResponse(res, lifecycleDefId);
   } catch (error) {
-    console.log("createCropLifeCycleStages", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    console.log("createCropLifeCycleDefenition", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-
-const getCropLifeCycleStage = (req,res) => {
+const getCropLifeCycleDefenitionDetails = (req, res) => {
   try {
-    const cropVarietyId = req.params.cropVarietyId;
-    const result = db.prepare(`
-      SELECT * FROM CropVariety WHERE Id = ?;
-      `).get(cropVarietyId);
-    
-      return successResponse(res,result);
+    const cropLifecycleDefId = req.params.cropLifecycleDefId;
+    const cropLifecycleDef = db
+      .prepare(`SELECT * FROM CropLifecycleDefinition WHERE Id = ?;`)
+      .get(cropLifecycleDefId);
+
+    const stages = db
+      .prepare(`SELECT * FROM CropLifeCycleStages WHERE CropLifecycleDefinitionId = ?;`)
+      .all(cropLifecycleDefId);
+
+    cropLifecycleDef.stages = stages;
+
+    return successResponse(res, toCamelCaseObject(cropLifecycleDef));
   } catch (error) {
-    console.log("getCropLifeCycleStage", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    console.log("getCropLifeCycleDefenitionDetails", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
 const deleteCropLifeCycleStage = (req, res) => {
   try {
-    const cropVarietyId = Number(req.params.cropVarietyId);
-    const stmt = db.prepare(`DELETE FROM CropVariety WHERE Id = ?`);
-    const result = stmt.run(cropVarietyId);
+    const cropLifecycleDefId = req.params.cropLifecycleDefId;
+    
+    const stmnt = db.prepare(`DELETE FROM CropLifecycleDefinition WHERE Id = ?`);
+    const result = stmnt.run(cropLifecycleDefId);
 
     if (result.changes === 0) {
-      return res.status(404).json({ message: "Crop Variety not found!", data: null });
+      return res
+        .status(404)
+        .json({ message: "Crop Lifecycle Definition not found!", data: null });
     }
 
-    return successResponse(res,null,"Crop Variety deleted successfully!");
+    return successResponse(res, null, "Crop Lifecycle Definition deleted successfully!");
   } catch (error) {
     console.log("deleteCropLifeCycleStage", error);
-    return errorResponse(res,"Something went wrong!",500,error.toString());
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
+const defaultStages = (req, res) => {
+  try {
+    const data = [
+      {
+        stageName: "LAND",
+        stageOrder: 1,
+        minDaysFromPreviousStage: 0,
+        maxDaysFromPreviousStage: 0,
+        description: "Land preparation with mulch and compost",
+      },
+      {
+        stageName: "SOW",
+        stageOrder: 2,
+        minDaysFromPreviousStage: 0,
+        maxDaysFromPreviousStage: 0,
+        description: "Planted suckers at 2.5m x 2.5m spacing",
+      },
+      {
+        stageName: "GERM",
+        stageOrder: 3,
+        minDaysFromPreviousStage: 0,
+        maxDaysFromPreviousStage: 0,
+        description: "Sucker sprouting and initial root development",
+      },
+      {
+        stageName: "GROW",
+        stageOrder: 4,
+        minDaysFromPreviousStage: 0,
+        maxDaysFromPreviousStage: 0,
+        description: "Vegetative growth - leaves and pseudo-stem development",
+      },
+      {
+        stageName: "FLOW",
+        stageOrder: 5,
+        minDaysFromPreviousStage: 0,
+        maxDaysFromPreviousStage: 0,
+        description: "Flowering and inflorescence emergence",
+      },
+      {
+        stageName: "FRUIT",
+        stageOrder: 6,
+        minDaysFromPreviousStage: 0,
+        maxDaysFromPreviousStage: 0,
+        description: "Fruit development and bunch formation",
+      },
+      {
+        stageName: "MAT",
+        stageOrder: 7,
+        minDaysFromPreviousStage: 0,
+        maxDaysFromPreviousStage: 0,
+        description: "Maturity - fruit maturation and coloring",
+      },
+      {
+        stageName: "HARW",
+        StageOrder: 8,
+        minDaysFromPreviousStage: 0,
+        maxDaysFromPreviousStage: 0,
+        description: "Harvest window - fruit ready for picking",
+      },
+    ];
+
+    return successResponse(res, data);
+  } catch (error) {
+    console.log("getCropLifeCycleDefenition", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
 
 module.exports = {
   getFarmerCrops,
@@ -661,6 +782,10 @@ module.exports = {
   getCropVarieities,
   createCropVarieities,
   getCropVarieity,
-  deleteCropVarieity
-
+  deleteCropVarieity,
+  getCropLifeCycleDefenitions,
+  createCropLifeCycleDefenition,
+  getCropLifeCycleDefenitionDetails,
+  deleteCropLifeCycleStage,
+  defaultStages,
 };

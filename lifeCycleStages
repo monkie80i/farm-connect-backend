@@ -1,0 +1,72 @@
+{
+            "Id": 1,
+            "CropLifecycleDefinitionId": 1,
+            "StageName": "LAND",
+            "StageOrder": 1,
+            "MinDaysFromPreviousStage": 0,
+            "MaxDaysFromPreviousStage": 10,
+            "Description": "Land preparation with mulch and compost"
+        },
+        {
+            "Id": 2,
+            "CropLifecycleDefinitionId": 1,
+            "StageName": "SOW",
+            "StageOrder": 2,
+            "MinDaysFromPreviousStage": 10,
+            "MaxDaysFromPreviousStage": 15,
+            "Description": "Planted suckers at 2.5m x 2.5m spacing"
+        },
+        {
+            "Id": 3,
+            "CropLifecycleDefinitionId": 1,
+            "StageName": "GERM",
+            "StageOrder": 3,
+            "MinDaysFromPreviousStage": 15,
+            "MaxDaysFromPreviousStage": 30,
+            "Description": "Sucker sprouting and initial root development"
+        },
+        {
+            "Id": 4,
+            "CropLifecycleDefinitionId": 1,
+            "StageName": "GROW",
+            "StageOrder": 4,
+            "MinDaysFromPreviousStage": 30,
+            "MaxDaysFromPreviousStage": 120,
+            "Description": "Vegetative growth - leaves and pseudo-stem development"
+        },
+        {
+            "Id": 5,
+            "CropLifecycleDefinitionId": 1,
+            "StageName": "FLOW",
+            "StageOrder": 5,
+            "MinDaysFromPreviousStage": 120,
+            "MaxDaysFromPreviousStage": 180,
+            "Description": "Flowering and inflorescence emergence"
+        },
+        {
+            "Id": 6,
+            "CropLifecycleDefinitionId": 1,
+            "StageName": "FRUIT",
+            "StageOrder": 6,
+            "MinDaysFromPreviousStage": 180,
+            "MaxDaysFromPreviousStage": 240,
+            "Description": "Fruit development and bunch formation"
+        },
+        {
+            "Id": 7,
+            "CropLifecycleDefinitionId": 1,
+            "StageName": "MAT",
+            "StageOrder": 7,
+            "MinDaysFromPreviousStage": 240,
+            "MaxDaysFromPreviousStage": 270,
+            "Description": "Maturity - fruit maturation and coloring"
+        },
+        {
+            "Id": 8,
+            "CropLifecycleDefinitionId": 1,
+            "StageName": "HARW",
+            "StageOrder": 8,
+            "MinDaysFromPreviousStage": 270,
+            "MaxDaysFromPreviousStage": 300,
+            "Description": "Harvest window - fruit ready for picking"
+        }
