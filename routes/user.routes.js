@@ -8,8 +8,17 @@ const {
     getUserDetails,
     getUserProfileDetails,
     editUserDetails,editProfileDetails,
-    getAllUserNegotiations
+    getAllUserNegotiations,
 } = require("../controllers/user.controller");
+
+const {
+    getOrderDisputes,
+    createOrderDispute,
+    getOrderDisputeDetails,
+    editDispute,
+    sendChat,
+    relaodChat,
+} = require("../controllers/order.controller")
 
 router.post("/:userId/id-verification", editProfileAndIdVerfication ); // tested working
 
@@ -21,29 +30,19 @@ router.put("/:userId/profile", editProfileDetails ); // tested working
 
 router.get('/:userId/all-negotiations', getAllUserNegotiations);
 
-router.post('/order-disputes', (req,res) => {
-    // get order dispute details for Admin
-})
+router.get('/:userId/order-disputes', getOrderDisputes);
 
-router.post('/order-disputes/:userId', (req,res) => {
-    // get order dispute details for farmers/Buyers 
-});
+router.post('/order-disputes/:orderId', createOrderDispute);
 
-router.post('/order-disputes/:orderId', (req,res) => {
-    // create order dispute for farmers/Buyers
-});
+router.get('/order-dispute/:disputeId', getOrderDisputeDetails);
 
-router.get('/order-dispute/:disputeId', (req,res) => {
-    // get order dispute details for farmers/Buyers
-});
+router.put('/order-dispute/:disputeId', editDispute);
 
-router.put('/order-dispute/:disputeId', (req,res) => {
-    // update order dispute for farmers
-});
+router.post('/order-dispute-chat/:disputeId', sendChat);
 
-router.delete('/order-dispute/:disputeId', (req,res) => {
-    // delete order dispute for farmers
-});
+router.get('/order-dispute-chat/:disputeId', relaodChat);
+
+router.delete('/order-dispute/:disputeId', (req,res) => {}); // not urgent
 
 router.get('/users', (req,res) => {
     // get all users for admin

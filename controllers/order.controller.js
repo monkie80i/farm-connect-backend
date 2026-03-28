@@ -30,13 +30,12 @@ const getOrders = (req, res, role = "Farmer") => {
     const params = [];
 
     if (userId) {
-      if(role === "Farmer") {
+      if (role === "Farmer") {
         whereContions.push("c.FarmerId = ?");
       } else {
         whereContions.push("o.CreatedUser = ?");
       }
       params.push(formatSQLValue(userId));
-
     }
 
     if (listerId) {
@@ -201,7 +200,7 @@ const createOrder = (req, res) => {
   }
 };
 
-const orderDetails = (req,res) => {
+const orderDetails = (req, res) => {
   // tested working
   try {
     const orderId = Number(req.params.orderId);
@@ -209,49 +208,249 @@ const orderDetails = (req,res) => {
       SELECT * FROM Orders WHERE Id = ?
     `);
     const order = stmnt.get(orderId);
-    if(!order) {
-      return notFound(res,"Order Not Found!");
+    if (!order) {
+      return notFound(res, "Order Not Found!");
     }
 
-    return successResponse(res,order);
+    return successResponse(res, order);
   } catch (error) {
     console.log("orderDetails", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-/**
- * CREATE TABLE IF NOT EXISTS Orders (
-        ListingEntityType NVARCHAR(1) CHECK (ListingEntityType IN ('I', 'G')),
-        ListingId INTEGER,
-        GroupId INTEGER,
-        ListerId INTEGER,
-        BuyerId INTEGER,
-        Quantity FLOAT,
-        OrderStatus NVARCHAR(20),
-        IsNegotiated INTEGER DEFAULT 0,
-        NegotiationId INTEGER,
-        FinalPrice FLOAT,
-        EstimatedFulfillmentDate DATE,
-        ActualFulfillmentDate DATE,
-        DeliveryAddressId INTEGER,
-        DeliveryOption NVARCHAR(20),
-        PaymentMethod NVARCHAR(20),
-        IsPaymentComplete INTEGER DEFAULT 0,
+const getOrderDisputes = (req, res) => {
+  try {
+    const userId = Number(req.params.userId) || null;
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+
+    const { disputeType, status, assignedAdmin } = req.query;
+
+    const whereContions = [];
+    const params = [];
+
+    if (userId) {
+      if (role !== "Farmer") {
+        whereContions.push("o.CreatedUser = ?");
+      }
+      params.push(formatSQLValue(userId));
+    }
+
+    if (assignedAdmin) {
+      whereContions.push("AssignedAdminId = ?");
+      params.push(formatSQLValue(assignedAdmin));
+    }
+
+    if (disputeType) {
+      whereContions.push("DisputeType = ?");
+      params.push(formatSQLValue(disputeType));
+    }
+
+    if (status) {
+      whereContions.push("Status = ?");
+      params.push(formatSQLValue(status));
+    }
+    params.push(pageSize, offset);
+
+    const whereClause =
+      whereContions.length > 0 ? "WHERE " + whereContions.join(" AND ") : "";
+    const stmnt = db.prepare(
+      `SELECT * FROM OrderDispute ${whereClause} LIMIT ? OFFSET ?;`,
+    );
+    const result = stmnt.all(...params);
+
+    return successResponse(res, toCamelCaseObject(result));
+  } catch (error) {
+    console.log("getOrderDisputes", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const createOrderDispute = (req, res) => {
+  try {
+    const { orderId, disputeType, status, description, against, userId } =
+      req.body;
+
+    const stmnt = db.prepare(`
+      INSERT INTO  OrderDispute (
+        OrderId,
+        DisputeType,
+        Status,
+        Description,
+        AgainstUserId,
+        CreatedUser,
+      ) VALUES (?,?,?,?,?,?);
+    `);
+    const result = stmnt.run(
+      orderId,
+      disputeType,
+      status,
+      description,
+      against,
+      userId,
+    );
+    return successResponse(res, result.lastInsertRowid);
+  } catch (error) {
+    console.log("createOrderDispute", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const getOrderDisputeDetails = (req, res) => {
+  try {
+    const disputeId = Number(req.params.disputeId);
+    const dispute = db
+      .prepare(`SELECT * FROM OrderDispute WHERE Id=?`)
+      .get(disputeId);
+
+    if (!dispute) {
+      return notFound(res);
+    }
+
+    const chat = db
+      .prepare(`SELECT * FROM OrderDisputeChat WHERE DisputeId=?`)
+      .all(disputeId);
+    result.chat = chat;
+
+    return successResponse(res, toCamelCaseObject(result));
+  } catch (error) {
+    console.log("getOrderDisputeDetails", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const editDispute = (req, res) => {
+  try {
+    const disputeId = req.params.disputeId;
+    const {
+      status,
+      description,
+      internalNotes,
+      adminVerdict,
+      assignedAdminId,
+      lastOpenedById,
+    } = req.body;
+
+    const updateFields = [];
+    const params = [];
+
+    if (status) {
+      updateFields.push("Status = ?");
+      params.push(status);
+    }
+
+    if (description) {
+      updateFields.push("Description = ?");
+      params.push(description);
+    }
+
+    if (internalNotes) {
+      updateFields.push("InternalNotes = ?");
+      params.push(internalNotes);
+    }
+
+    if (adminVerdict) {
+      updateFields.push("AdminVerdict = ?");
+      params.push(adminVerdict);
+    }
+
+    if (assignedAdminId) {
+      updateFields.push("AssignedAdminId = ?");
+      params.push(assignedAdminId);
+    }
+
+    if (lastOpenedById) {
+      updateFields.push("LastOpenedById = ?");
+      params.push(lastOpenedById);
+    }
+
+    params.push(disputeId);
+
+    const updateCaluse = updateFields.join(", ");
+    const stmnt = db.prepare(`
+    UPDATE OrderDispute SET 
+    ${updateCaluse}
+    WHERE Id = ?;
+  `);
+
+    const result = stmnt.run(...params);
+
+    return successResponse(res);
+  } catch (error) {
+    console.log("editDispute", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const sendChat = (req,res) => {
+  try {
+    const disputeId = req.params.disputeId;
+    const {
+      sender,
+      message
+    } = req.body;
+
+    const stmnt = db.prepare(`INSERT INTO OrderDisputeChat(DisputeId,SentBy,Message) VALUES (?,?,?)`);
+    const result = stmnt.run(disputeId,sender,message);
+    return successResponse(res,result.lastInsertRowid);
+  } catch (error) {
+    console.log("sendChat", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const relaodChat = (req,res) => {
+  try {
+    const disputeId = req.params.disputeId;
+    const lastSeenId = req.query.lastSeenId;
+
+    const stmnt = db.prepare(`SELECT * FROM OrderDisputeChat WHERE DisputeId = ? AND Id > ?`);
+    const result = stmnt.all(disputeId,lastSeenId);
+    return successResponse(res, toCamelCaseObject(result));
+  } catch (error) {
+    console.log("relaodChat", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+
+/***
+ * CREATE TABLE IF NOT EXISTS OrderDispute (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        OrderId INTEGER,
+        DisputeType NVARCHAR(20),
+        Status NVARCHAR(20),
+        Description TEXT,
+        AgainstUserId INTEGER,
+        InternalNotes TEXT,
+        AdminVerdict TEXT,
+        AssignedAdminId INTEGER,
+        LastOpenedById INTEGER,
         CreatedUser INTEGER,
         UpdatedUser INTEGER,
         CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
         UpdatedDate DATETIME,
         FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
         FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (BuyerId) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (DeliveryAddressId) REFERENCES BuyerAddress(Id) ON DELETE SET NULL,
-        FOREIGN KEY (OrderStatus) REFERENCES OrderStatusLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (DeliveryOption) REFERENCES DeliveryOptionLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (PaymentMethod) REFERENCES PaymentMethodsLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (GroupId) REFERENCES GroupListing(Id) ON DELETE SET NULL,
-        FOREIGN KEY (NegotiationId) REFERENCES Negotiation(Id) ON DELETE SET NULL
+        FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE SET NULL,
+        FOREIGN KEY (DisputeType) REFERENCES DisputeTypesLov(Code) ON DELETE SET NULL,
+        FOREIGN KEY (Status) REFERENCES DisputeStatusLov(Code) ON DELETE SET NULL,
+        FOREIGN KEY (AgainstUserId) REFERENCES Users(Id) ON DELETE SET NULL,
+        FOREIGN KEY (AssignedAdminId) REFERENCES Users(Id) ON DELETE SET NULL,
+        FOREIGN KEY (LastOpenedById) REFERENCES Users(Id) ON DELETE SET NULL
     );
  */
 
-module.exports = { getOrders,createOrder,orderDetails };
+module.exports = {
+  getOrders,
+  createOrder,
+  orderDetails,
+  getOrderDisputes,
+  createOrderDispute,
+  getOrderDisputeDetails,
+  editDispute,
+  sendChat,
+  relaodChat,
+};
