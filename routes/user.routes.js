@@ -9,6 +9,11 @@ const {
     getUserProfileDetails,
     editUserDetails,editProfileDetails,
     getAllUserNegotiations,
+    searchUsers,
+    getRecentNotifications,
+    markNotificationRead,
+    getRecentOrderAlerts,
+    markOrderAlertRead
 } = require("../controllers/user.controller");
 
 const {
@@ -20,12 +25,24 @@ const {
     relaodChat,
 } = require("../controllers/order.controller")
 
+router.get('/users',searchUsers); // tested working
+
+router.get('/notifications/:userId', getRecentNotifications); // tested working
+
+router.put('/notification-mark-as-read/:notificationId', markNotificationRead); // tested working
+
+router.get('/order-alerts/:userId', getRecentOrderAlerts); // tested working
+
+router.put('/order-alert-mark-as-read/:alertId', markNotificationRead); // tested working
+
 router.post("/:userId/id-verification", editProfileAndIdVerfication ); // tested working
 
 router.get("/:userId", getUserDetails ); // tested working
+
 router.put("/:userId", editUserDetails ); // tested working
 
 router.get("/:userId/profile", getUserProfileDetails); // tested working
+
 router.put("/:userId/profile", editProfileDetails ); // tested working
 
 router.get('/:userId/all-negotiations', getAllUserNegotiations);
@@ -42,28 +59,10 @@ router.post('/order-dispute-chat/:disputeId', sendChat);
 
 router.get('/order-dispute-chat/:disputeId', relaodChat);
 
-router.delete('/order-dispute/:disputeId', (req,res) => {}); // not urgent
+// router.delete('/order-dispute/:disputeId', (req,res) => {}); // not urgent
 
-router.get('/users', (req,res) => {
-    // get all users for admin
-});
+// router.get('/user/:userId', (req,res) => {}); // not urgent
 
-router.get('/user/:userId', (req,res) => {
-    // get user details for admin
-});
-
-router.put('/user/:userId', (req,res) => {
-    // update user details for admin
-});
-
-router.get('/notifications/:userId', (req,res) => {
-    // get notifications for farmers
-});
-
-router.get('/order-alerts/:userId', (req,res) => {
-    // get order alerts for farmers
-});
-
-
+// router.put('/user/:userId', (req,res) => {}); // not urgent
 
 module.exports = router;

@@ -402,6 +402,139 @@ const getAllUserNegotiations = (req,res) => {
   }
 };
 
+const searchUsers = (req,res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+
+    const {
+      username,
+      email,
+      role
+    } =req.query;
+
+    const whereConditions = [];
+    const params = [];
+
+    if(username) {
+      whereConditions.push("Username LIKE '%' || ? || '%'");
+      params.push(username);
+    }
+
+    if(email) {
+      whereConditions.push("Email LIKE '%' || ? || '%'");
+      params.push(email);
+    }
+
+    if(role) {
+      whereConditions.push("Role = ?");
+      params.push(role);
+    }
+
+    params.push(pageSize);
+    params.push(offset);
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ` + whereConditions.join(' AND '): "";
+    
+    const stmnt = db.prepare(`
+      SELECT * FROM Users LEFT JOIN UserProfile ${whereClause} LIMIT ? OFFSET ?;
+    `);
+    console.log(stmnt)
+    const result = stmnt.all(...params);
+
+    return successResponse(res,toCamelCaseObject(result));
+    
+  } catch (error) {
+    console.log("searchUsers", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const getRecentNotifications = (req,res) => {
+  try {
+    const userId = req.params.userId;
+    const stmnt = db.prepare(`SELECT * FROM Notification WHERE Recipient = ? AND IsViewed = 0;`);
+    const result = stmnt.all(userId);
+    return successResponse(res,toCamelCaseObject(result));
+  } catch (error) {
+    console.log("getRecentNotifications", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const markNotificationRead = (req,res) => {
+  try {
+    const notificationId = req.params.notificationId;
+    const stmnt = db.prepare(`UPDATE Notification SET IsViewed = 1 WHERE Id = ?;`);
+    stmnt.run(notificationId);
+    return successResponse(res);
+  } catch (error) {
+    console.log("markNotificationRead", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const getRecentOrderAlerts = (req,res) => {
+  try {
+    const userId = req.params.userId;
+    const stmnt = db.prepare(`SELECT * FROM OrderAlert WHERE Recipient = ? AND IsViewed = 0;`);
+    const result = stmnt.all(userId);
+    return successResponse(res,toCamelCaseObject(result));
+  } catch (error) {
+    console.log("getRecentOrderAlerts", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const markOrderAlertRead = (req,res) => {
+  try {
+    const alertId = req.params.alertId;
+    const stmnt = db.prepare(`UPDATE OrderAlert SET IsViewed = 1 WHERE Id = ?;`);
+    stmnt.run(alertId);
+    return successResponse(res);
+  } catch (error) {
+    console.log("markOrderAlertRead", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+
+/**
+ * 
+ * CREATE TABLE IF NOT EXISTS Notification (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        Title NVARCHAR(200) NOT NULL,
+        Recipient INTEGER,
+        NotificationType NVARCHAR(20),
+        Message TEXT,
+        EntityType NVARCHAR(100),
+        EntityId INTEGER,
+        ActionUrl TEXT,
+        Priority NVARCHAR(20),
+        IsViewed INTEGER DEFAULT 0,
+        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (Recipient) REFERENCES Users(Id) ON DELETE SET NULL,
+        FOREIGN KEY (Priority) REFERENCES NotificationPriorityLov(Code) ON DELETE SET NULL,
+        FOREIGN KEY (NotificationType) REFERENCES NotificationTypeLov(Code) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS OrderAlert (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        Title NVARCHAR(200) NOT NULL,
+        Recipient INTEGER,
+        NotificationType NVARCHAR(20),
+        OrderId INTEGER,
+        ActionUrl TEXT,
+        Priority NVARCHAR(20),
+        IsViewed INTEGER DEFAULT 0,
+        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (Priority) REFERENCES AlertPriorityLov(Code) ON DELETE SET NULL,
+        FOREIGN KEY (NotificationType) REFERENCES NotificationTypeLov(Code) ON DELETE SET NULL,
+        FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE SET NULL
+    );
+ */
+
 
 module.exports = {
   editProfileAndIdVerfication,
@@ -410,4 +543,9 @@ module.exports = {
   editUserDetails,
   editProfileDetails,
   getAllUserNegotiations,
+  searchUsers,
+  getRecentNotifications,
+  markNotificationRead,
+  getRecentOrderAlerts,
+  markOrderAlertRead
 };
