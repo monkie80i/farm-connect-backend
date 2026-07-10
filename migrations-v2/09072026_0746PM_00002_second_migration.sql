@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS removeLater (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        UserId INTEGER,
+        DisplayPicturePath TEXT,
+        Address TEXT,
+        City NVARCHAR(20),
+        State NVARCHAR(20),
+        IdProofType NVARCHAR(10),
+        IdProofPath TEXT,
+        IdProofExtension NVARCHAR(10),
+        UPIId TEXT,
+        CreatedUser INTEGER,
+        UpdatedUser INTEGER,
+        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UpdatedDate DATETIME,
+        FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+        FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE CASCADE,
+        FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE CASCADE,
+        FOREIGN KEY (IdProofType) REFERENCES IdProofTypesLov(Code) ON DELETE SET NULL
+    );

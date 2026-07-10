@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS Users (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        UserName NVARCHAR(50) NOT NULL UNIQUE,
+        FirstName NVARCHAR(30) NOT NULL,
+        LastName NVARCHAR(30) NOT NULL,
+        PasswordHash TEXT NOT NULL,
+        Email NVARCHAR(256) NOT NULL UNIQUE,
+        PhoneCode NVARCHAR(5),
+        Phone NVARCHAR(15),
+        DateOfBirth DATE NOT NULL,
+        Role NVARCHAR(10) NOT NULL,
+        IsEmailVerified INTEGER DEFAULT 0,
+        IsPhoneVerified INTEGER DEFAULT 0,
+        IsVerificationFilled INTEGER DEFAULT 0,
+        IsAdminVerified INTEGER DEFAULT 0,
+        IsActive INTEGER DEFAULT 1,
+        IsAdmin INTEGER DEFAULT 0,
+        IsBanned INTEGER DEFAULT 0,
+        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UpdateDate DATETIME,
+        FOREIGN KEY (Role) REFERENCES UserRolesLov(Code) ON DELETE SET NULL
+    );
