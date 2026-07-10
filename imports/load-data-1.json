@@ -1,0 +1,2720 @@
+{
+  "UserRolesLov": [
+    {
+      "Code": "FARMER",
+      "Description": "Farmer user"
+    },
+    {
+      "Code": "BUYER",
+      "Description": "Buyer user"
+    },
+    {
+      "Code": "ADMIN",
+      "Description": "System administrator"
+    }
+  ],
+  "IdProofTypesLov": [
+    {
+      "Code": "AADHAR",
+      "Description": "Aadhar Card"
+    },
+    {
+      "Code": "PAN",
+      "Description": "PAN Card"
+    },
+    {
+      "Code": "DL",
+      "Description": "Driving License"
+    },
+    {
+      "Code": "VOTER",
+      "Description": "Voter ID"
+    },
+    {
+      "Code": "PASS",
+      "Description": "Passport"
+    }
+  ],
+  "PaymentMethodsLov": [
+    {
+      "Code": "UPI",
+      "Description": "UPI Payment"
+    },
+    {
+      "Code": "BANK",
+      "Description": "Bank Transfer"
+    },
+    {
+      "Code": "COD",
+      "Description": "Cash on Delivery"
+    },
+    {
+      "Code": "CARD",
+      "Description": "Credit/Debit Card"
+    }
+  ],
+  "HealthStatusLov": [
+    {
+      "Code": "HLTY",
+      "Description": "Healthy"
+    },
+    {
+      "Code": "MINOR",
+      "Description": "Minor Issue"
+    },
+    {
+      "Code": "RISK",
+      "Description": "At Risk"
+    },
+    {
+      "Code": "CRIT",
+      "Description": "Critical"
+    },
+    {
+      "Code": "HARV",
+      "Description": "Harvested"
+    }
+  ],
+  "CropStagesLov": [
+    {
+      "Code": "LAND",
+      "Description": "Land Preparation"
+    },
+    {
+      "Code": "SOW",
+      "Description": "Sowing"
+    },
+    {
+      "Code": "GERM",
+      "Description": "Germination"
+    },
+    {
+      "Code": "GROW",
+      "Description": "Vegetative Growth"
+    },
+    {
+      "Code": "FLOW",
+      "Description": "Flowering"
+    },
+    {
+      "Code": "FRUIT",
+      "Description": "Fruiting"
+    },
+    {
+      "Code": "MAT",
+      "Description": "Maturity"
+    },
+    {
+      "Code": "HARW",
+      "Description": "Harvest Window"
+    }
+  ],
+  "HealthLogSeverityLov": [
+    {
+      "Code": "LOW",
+      "Description": "Low Severity"
+    },
+    {
+      "Code": "MED",
+      "Description": "Medium Severity"
+    },
+    {
+      "Code": "HIGH",
+      "Description": "High Severity"
+    }
+  ],
+  "GroupVisibilityStatusLov": [
+    {
+      "Code": "FORM",
+      "Description": "Forming"
+    },
+    {
+      "Code": "OPEN",
+      "Description": "Open for Orders"
+    },
+    {
+      "Code": "CLOS",
+      "Description": "Closed"
+    },
+    {
+      "Code": "EXP",
+      "Description": "Expired"
+    }
+  ],
+  "OrderStatusLov": [
+    {
+      "Code": "PEND",
+      "Description": "Pending"
+    },
+    {
+      "Code": "NEGO",
+      "Description": "Negotiating"
+    },
+    {
+      "Code": "CONF",
+      "Description": "Confirmed"
+    },
+    {
+      "Code": "REJ",
+      "Description": "Rejected"
+    },
+    {
+      "Code": "CANC",
+      "Description": "Cancelled"
+    },
+    {
+      "Code": "PAID",
+      "Description": "Paid"
+    },
+    {
+      "Code": "FULF",
+      "Description": "Fulfilled"
+    }
+  ],
+  "DisputeTypesLov": [
+    {
+      "Code": "QUAL",
+      "Description": "Quality Issue"
+    },
+    {
+      "Code": "QTY",
+      "Description": "Quantity Mismatch"
+    },
+    {
+      "Code": "PAY",
+      "Description": "Payment Issue"
+    },
+    {
+      "Code": "DEL",
+      "Description": "Delivery Delay"
+    },
+    {
+      "Code": "OTHR",
+      "Description": "Other"
+    }
+  ],
+  "DisputeStatusLov": [
+    {
+      "Code": "OPEN",
+      "Description": "Open"
+    },
+    {
+      "Code": "CLMD",
+      "Description": "Claimed"
+    },
+    {
+      "Code": "RES",
+      "Description": "Resolved"
+    },
+    {
+      "Code": "REJ",
+      "Description": "Rejected"
+    }
+  ],
+  "LandAreaUnitLov": [
+    {
+      "Code": "ACRE",
+      "Description": "Acre"
+    },
+    {
+      "Code": "HA",
+      "Description": "Hectare"
+    },
+    {
+      "Code": "SQM",
+      "Description": "Square Meter"
+    }
+  ],
+  "ListingStatus": [
+    {
+      "Code": "DRAFT",
+      "Description": "Draft"
+    },
+    {
+      "Code": "ACTIVE",
+      "Description": "Active"
+    },
+    {
+      "Code": "CLOSED",
+      "Description": "Closed"
+    },
+    {
+      "Code": "SOLD",
+      "Description": "Sold Out"
+    },
+    {
+      "Code": "EXP",
+      "Description": "Expired"
+    }
+  ],
+  "CropUnitLov": [
+    {
+      "Code": "KG",
+      "Description": "Kilogram"
+    },
+    {
+      "Code": "QTL",
+      "Description": "Quintal"
+    },
+    {
+      "Code": "TON",
+      "Description": "Metric Ton"
+    }
+  ],
+  "OrderStageLov": [
+    {
+      "Code": "REQ",
+      "Description": "Order Requested"
+    },
+    {
+      "Code": "NEGO",
+      "Description": "Negotiation"
+    },
+    {
+      "Code": "CONF",
+      "Description": "Order Confirmed"
+    },
+    {
+      "Code": "PAY",
+      "Description": "Payment Pending"
+    },
+    {
+      "Code": "SHIP",
+      "Description": "Out for Delivery"
+    },
+    {
+      "Code": "COMP",
+      "Description": "Completed"
+    }
+  ],
+  "DeliveryOptionLov": [
+    {
+      "Code": "PICK",
+      "Description": "Self Pickup"
+    },
+    {
+      "Code": "DELIV",
+      "Description": "Farmer Delivery"
+    },
+    {
+      "Code": "THIRD",
+      "Description": "Third-party Logistics"
+    }
+  ],
+  "HealthWarningTypeLov": [
+    {
+      "Code": "DELAY",
+      "Description": "Stage Delay"
+    },
+    {
+      "Code": "REPISS",
+      "Description": "Repeated Issues"
+    },
+    {
+      "Code": "MON",
+      "Description": "Monitoring Gap"
+    }
+  ],
+  "HealthSeverityLov": [
+    {
+      "Code": "INFO",
+      "Description": "Informational"
+    },
+    {
+      "Code": "WARN",
+      "Description": "Warning"
+    },
+    {
+      "Code": "CRIT",
+      "Description": "Critical"
+    }
+  ],
+  "AlertPriorityLov": [
+    {
+      "Code": "LOW",
+      "Description": "Low Priority"
+    },
+    {
+      "Code": "MED",
+      "Description": "Medium Priority"
+    },
+    {
+      "Code": "HIGH",
+      "Description": "High Priority"
+    }
+  ],
+  "NotificationTypeLov": [
+    {
+      "Code": "ORDER",
+      "Description": "Order Update"
+    },
+    {
+      "Code": "GROUP",
+      "Description": "Group Update"
+    },
+    {
+      "Code": "HEALTH",
+      "Description": "Health Alert"
+    },
+    {
+      "Code": "DISP",
+      "Description": "Dispute Update"
+    },
+    {
+      "Code": "PAY",
+      "Description": "Payment Update"
+    },
+    {
+      "Code": "SYS",
+      "Description": "System Notification"
+    }
+  ],
+  "NotificationPriorityLov": [
+    {
+      "Code": "INFO",
+      "Description": "Informational"
+    },
+    {
+      "Code": "ACTION",
+      "Description": "Action Required"
+    },
+    {
+      "Code": "URGENT",
+      "Description": "Urgent"
+    }
+  ],
+  "Users": [
+    {
+      "Id": 1,
+      "UserName": "farmer_rahim",
+      "FirstName": "Rahim",
+      "LastName": "Koya",
+      "PasswordHash": "hash1",
+      "Email": "rahim@test.com",
+      "PhoneCode": "+91",
+      "Phone": "9876500011",
+      "DateOfBirth": "1990-03-12",
+      "Role": "FARMER",
+      "IsEmailVerified": 1,
+      "IsPhoneVerified": 1,
+      "IsVerificationFilled": 0,
+      "IsAdminVerified": 0,
+      "IsActive": 1,
+      "IsAdmin": 0,
+      "IsBanned": 0,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdateDate": null
+    },
+    {
+      "Id": 2,
+      "UserName": "farmer_salim",
+      "FirstName": "Salim",
+      "LastName": "Khan",
+      "PasswordHash": "hash2",
+      "Email": "salim@test.com",
+      "PhoneCode": "+91",
+      "Phone": "9876500022",
+      "DateOfBirth": "1988-07-21",
+      "Role": "FARMER",
+      "IsEmailVerified": 1,
+      "IsPhoneVerified": 1,
+      "IsVerificationFilled": 0,
+      "IsAdminVerified": 0,
+      "IsActive": 1,
+      "IsAdmin": 0,
+      "IsBanned": 0,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdateDate": null
+    },
+    {
+      "Id": 3,
+      "UserName": "buyer_anas",
+      "FirstName": "Anas",
+      "LastName": "Ali",
+      "PasswordHash": "hash3",
+      "Email": "anas@test.com",
+      "PhoneCode": "+91",
+      "Phone": "9876500033",
+      "DateOfBirth": "1995-01-05",
+      "Role": "BUYER",
+      "IsEmailVerified": 1,
+      "IsPhoneVerified": 1,
+      "IsVerificationFilled": 0,
+      "IsAdminVerified": 0,
+      "IsActive": 1,
+      "IsAdmin": 0,
+      "IsBanned": 0,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdateDate": null
+    },
+    {
+      "Id": 4,
+      "UserName": "buyer_faris",
+      "FirstName": "Faris",
+      "LastName": "Hassan",
+      "PasswordHash": "hash4",
+      "Email": "faris@test.com",
+      "PhoneCode": "+91",
+      "Phone": "9876500044",
+      "DateOfBirth": "1996-09-18",
+      "Role": "BUYER",
+      "IsEmailVerified": 1,
+      "IsPhoneVerified": 1,
+      "IsVerificationFilled": 0,
+      "IsAdminVerified": 0,
+      "IsActive": 1,
+      "IsAdmin": 0,
+      "IsBanned": 0,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdateDate": null
+    }
+  ],
+  "UserProfile": [
+    {
+      "Id": 1,
+      "UserId": 1,
+      "DisplayPicturePath": null,
+      "Address": "Green Villa, Kuthuparamba",
+      "City": "Kannur",
+      "State": "Kerala",
+      "IdProofType": null,
+      "IdProofPath": null,
+      "IdProofExtension": null,
+      "UPIId": "rahim@upi",
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "UserId": 2,
+      "DisplayPicturePath": null,
+      "Address": "Palm Farm House, Taliparamba",
+      "City": "Kannur",
+      "State": "Kerala",
+      "IdProofType": null,
+      "IdProofPath": null,
+      "IdProofExtension": null,
+      "UPIId": "salim@upi",
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "UserId": 3,
+      "DisplayPicturePath": null,
+      "Address": "Skyline Apartment",
+      "City": "Kozhikode",
+      "State": "Kerala",
+      "IdProofType": null,
+      "IdProofPath": null,
+      "IdProofExtension": null,
+      "UPIId": "anas@upi",
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 4,
+      "UserId": 4,
+      "DisplayPicturePath": null,
+      "Address": "Sea View Residency",
+      "City": "Kochi",
+      "State": "Kerala",
+      "IdProofType": null,
+      "IdProofPath": null,
+      "IdProofExtension": null,
+      "UPIId": "faris@upi",
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    }
+  ],
+  "UserPaymentMethod": [
+    {
+      "Id": 1,
+      "UserId": 1,
+      "PaymentMethod": "UPI"
+    },
+    {
+      "Id": 2,
+      "UserId": 1,
+      "PaymentMethod": "BANK"
+    },
+    {
+      "Id": 3,
+      "UserId": 2,
+      "PaymentMethod": "UPI"
+    },
+    {
+      "Id": 4,
+      "UserId": 2,
+      "PaymentMethod": "COD"
+    }
+  ],
+  "BuyerAddress": [
+    {
+      "Id": 1,
+      "UserId": 3,
+      "Address": "Flat 2B, City Tower",
+      "City": "Kozhikode",
+      "State": "Kerala",
+      "IsDefault": 1,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "UserId": 3,
+      "Address": "Office Street 12",
+      "City": "Kozhikode",
+      "State": "Kerala",
+      "IsDefault": 0,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "UserId": 4,
+      "Address": "Marine Drive Building",
+      "City": "Kochi",
+      "State": "Kerala",
+      "IsDefault": 1,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 4,
+      "UserId": 4,
+      "Address": "Warehouse Road 5",
+      "City": "Ernakulam",
+      "State": "Kerala",
+      "IsDefault": 0,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    }
+  ],
+  "Farm": [
+    {
+      "Id": 1,
+      "UserId": 1,
+      "Name": "Rahim Banana Farm",
+      "Address": "Mattanur Road",
+      "City": "Kannur",
+      "State": "Kerala",
+      "Latitude": 11.8745,
+      "Longitude": 75.3704,
+      "TotalCultivableArea": 2.5,
+      "landUnit": null,
+      "OwnershipProofPath": null,
+      "IsDefault": 1,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "UserId": 2,
+      "Name": "Salim Mixed Farm",
+      "Address": "Taliparamba Village",
+      "City": "Kannur",
+      "State": "Kerala",
+      "Latitude": 12.0416,
+      "Longitude": 75.355,
+      "TotalCultivableArea": 3.2,
+      "landUnit": null,
+      "OwnershipProofPath": null,
+      "IsDefault": 1,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    }
+  ],
+  "CropType": [
+    {
+      "Id": 1,
+      "CropName": "Banana",
+      "ScientificName": "Musa acuminata",
+      "IsPerennial": 1,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "CropName": "Coconut",
+      "ScientificName": "Cocos nucifera",
+      "IsPerennial": 1,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "CropName": "Pepper",
+      "ScientificName": "Piper nigrum",
+      "IsPerennial": 1,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 4,
+      "CropName": "Tomato",
+      "ScientificName": "Solanum lycopersicum",
+      "IsPerennial": 0,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 5,
+      "CropName": "Chilli",
+      "ScientificName": "Capsicum annuum",
+      "IsPerennial": 0,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 6,
+      "CropName": "Ginger",
+      "ScientificName": "Zingiber officinale",
+      "IsPerennial": 0,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:21",
+      "UpdatedDate": null
+    }
+  ],
+  "FarmCropTypes": [
+    {
+      "Id": 1,
+      "FarmId": 1,
+      "CropTypeId": 1
+    },
+    {
+      "Id": 2,
+      "FarmId": 1,
+      "CropTypeId": 3
+    },
+    {
+      "Id": 3,
+      "FarmId": 1,
+      "CropTypeId": 4
+    },
+    {
+      "Id": 4,
+      "FarmId": 2,
+      "CropTypeId": 2
+    },
+    {
+      "Id": 5,
+      "FarmId": 2,
+      "CropTypeId": 3
+    },
+    {
+      "Id": 6,
+      "FarmId": 2,
+      "CropTypeId": 6
+    }
+  ],
+  "CropVariety": [
+    {
+      "Id": 1,
+      "CropTypeId": 1,
+      "VarietyName": "Nendran Banana",
+      "MaturityMinDays": 240,
+      "MaturityMaxDays": 300,
+      "YieldPerAcre": 25,
+      "ShelfLifeDays": 14,
+      "IsHybrid": 0,
+      "Notes": "Popular Kerala variety, medium-sized bunches",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "CropTypeId": 1,
+      "VarietyName": "Robusta Banana",
+      "MaturityMinDays": 200,
+      "MaturityMaxDays": 270,
+      "YieldPerAcre": 30,
+      "ShelfLifeDays": 10,
+      "IsHybrid": 0,
+      "Notes": "High yield variety, good for export",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "CropTypeId": 1,
+      "VarietyName": "Poovan Banana",
+      "MaturityMinDays": 180,
+      "MaturityMaxDays": 240,
+      "YieldPerAcre": 20,
+      "ShelfLifeDays": 16,
+      "IsHybrid": 0,
+      "Notes": "Golden color, sweet variety",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 4,
+      "CropTypeId": 2,
+      "VarietyName": "West Coast Tall",
+      "MaturityMinDays": 2000,
+      "MaturityMaxDays": 2500,
+      "YieldPerAcre": 12,
+      "ShelfLifeDays": 180,
+      "IsHybrid": 0,
+      "Notes": "High oil content variety",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 5,
+      "CropTypeId": 2,
+      "VarietyName": "Dwarf Green",
+      "MaturityMinDays": 1200,
+      "MaturityMaxDays": 1500,
+      "YieldPerAcre": 15,
+      "ShelfLifeDays": 180,
+      "IsHybrid": 0,
+      "Notes": "Early bearing, compact growth",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 6,
+      "CropTypeId": 2,
+      "VarietyName": "Hybrid Coconut",
+      "MaturityMinDays": 1500,
+      "MaturityMaxDays": 1800,
+      "YieldPerAcre": 18,
+      "ShelfLifeDays": 180,
+      "IsHybrid": 1,
+      "Notes": "Hybrid variant for better yield",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 7,
+      "CropTypeId": 3,
+      "VarietyName": "Pippali",
+      "MaturityMinDays": 210,
+      "MaturityMaxDays": 270,
+      "YieldPerAcre": 0.8,
+      "ShelfLifeDays": 365,
+      "IsHybrid": 0,
+      "Notes": "Long pepper variety",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 8,
+      "CropTypeId": 3,
+      "VarietyName": "Kalluvally",
+      "MaturityMinDays": 200,
+      "MaturityMaxDays": 260,
+      "YieldPerAcre": 1,
+      "ShelfLifeDays": 365,
+      "IsHybrid": 0,
+      "Notes": "High spice content",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 9,
+      "CropTypeId": 4,
+      "VarietyName": "Arka Vikas",
+      "MaturityMinDays": 60,
+      "MaturityMaxDays": 90,
+      "YieldPerAcre": 50,
+      "ShelfLifeDays": 7,
+      "IsHybrid": 0,
+      "Notes": "High yielding variety",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 10,
+      "CropTypeId": 4,
+      "VarietyName": "Pusa Ruby",
+      "MaturityMinDays": 70,
+      "MaturityMaxDays": 100,
+      "YieldPerAcre": 45,
+      "ShelfLifeDays": 6,
+      "IsHybrid": 0,
+      "Notes": "Large fruit size",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 11,
+      "CropTypeId": 5,
+      "VarietyName": "Byadagi",
+      "MaturityMinDays": 100,
+      "MaturityMaxDays": 150,
+      "YieldPerAcre": 15,
+      "ShelfLifeDays": 30,
+      "IsHybrid": 0,
+      "Notes": "Medium pungent, export quality",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 12,
+      "CropTypeId": 5,
+      "VarietyName": "Kashmiri",
+      "MaturityMinDays": 110,
+      "MaturityMaxDays": 160,
+      "YieldPerAcre": 12,
+      "ShelfLifeDays": 28,
+      "IsHybrid": 0,
+      "Notes": "Mild pungent, bright red",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 13,
+      "CropTypeId": 6,
+      "VarietyName": "Suprabha",
+      "MaturityMinDays": 270,
+      "MaturityMaxDays": 300,
+      "YieldPerAcre": 20,
+      "ShelfLifeDays": 60,
+      "IsHybrid": 0,
+      "Notes": "High oleoresin content",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 14,
+      "CropTypeId": 6,
+      "VarietyName": "Megha",
+      "MaturityMinDays": 250,
+      "MaturityMaxDays": 290,
+      "YieldPerAcre": 22,
+      "ShelfLifeDays": 60,
+      "IsHybrid": 0,
+      "Notes": "Disease resistant variety",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    }
+  ],
+  "Crop": [
+    {
+      "Id": 1,
+      "Name": "Nendran Batch 2026-01",
+      "CropTypeId": 1,
+      "VarietyId": 1,
+      "FarmId": 1,
+      "FarmerId": 1,
+      "LandPrepDate": "2025-12-01",
+      "SowingDate": "2025-12-15",
+      "ExpectedGrowthDurationDays": null,
+      "CultivatedArea": 1.5,
+      "CultivatedAreaUnit": "ACRE",
+      "CultivatedAreaInAcre": null,
+      "InitialSoilCondition": "Well-drained loamy soil with pH 6.5",
+      "InitialNotes": "Planted with proper spacing",
+      "HealthStatus": "HLTY",
+      "CurrentStage": "GROW",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": null,
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "Name": "Kalluvally Pepper 2026-01",
+      "CropTypeId": 3,
+      "VarietyId": 4,
+      "FarmId": 1,
+      "FarmerId": 1,
+      "LandPrepDate": "2025-10-01",
+      "SowingDate": "2025-10-20",
+      "ExpectedGrowthDurationDays": null,
+      "CultivatedArea": 0.8,
+      "CultivatedAreaUnit": "ACRE",
+      "CultivatedAreaInAcre": null,
+      "InitialSoilCondition": "Slightly acidic soil, good drainage",
+      "InitialNotes": "Young climbing vines established",
+      "HealthStatus": "HLTY",
+      "CurrentStage": "FLOW",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": null,
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "Name": "Arka Vikas Tomato 2026-01",
+      "CropTypeId": 4,
+      "VarietyId": 8,
+      "FarmId": 1,
+      "FarmerId": 1,
+      "LandPrepDate": "2026-01-05",
+      "SowingDate": "2026-01-15",
+      "ExpectedGrowthDurationDays": null,
+      "CultivatedArea": 0.5,
+      "CultivatedAreaUnit": "ACRE",
+      "CultivatedAreaInAcre": null,
+      "InitialSoilCondition": "Fertile loamy soil",
+      "InitialNotes": "Seedlings transplanted",
+      "HealthStatus": "HLTY",
+      "CurrentStage": "GERM",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": null,
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 4,
+      "Name": "West Coast Tall Coconut 2026",
+      "CropTypeId": 2,
+      "VarietyId": 1,
+      "FarmId": 2,
+      "FarmerId": 2,
+      "LandPrepDate": "2024-06-01",
+      "SowingDate": "2024-06-15",
+      "ExpectedGrowthDurationDays": null,
+      "CultivatedArea": 2,
+      "CultivatedAreaUnit": "ACRE",
+      "CultivatedAreaInAcre": null,
+      "InitialSoilCondition": "Sandy loam with good drainage",
+      "InitialNotes": "Trees in productive stage",
+      "HealthStatus": "HLTY",
+      "CurrentStage": "GROW",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": null,
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 2,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 5,
+      "Name": "Pippali Pepper 2026-01",
+      "CropTypeId": 3,
+      "VarietyId": 3,
+      "FarmId": 2,
+      "FarmerId": 2,
+      "LandPrepDate": "2025-09-01",
+      "SowingDate": "2025-09-15",
+      "ExpectedGrowthDurationDays": null,
+      "CultivatedArea": 0.6,
+      "CultivatedAreaUnit": "ACRE",
+      "CultivatedAreaInAcre": null,
+      "InitialSoilCondition": "High organic matter content",
+      "InitialNotes": "Vines flowering and fruiting",
+      "HealthStatus": "HLTY",
+      "CurrentStage": "MAT",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": null,
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 2,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 6,
+      "Name": "Suprabha Ginger 2025-26",
+      "CropTypeId": 6,
+      "VarietyId": 7,
+      "FarmId": 2,
+      "FarmerId": 2,
+      "LandPrepDate": "2025-05-01",
+      "SowingDate": "2025-05-15",
+      "ExpectedGrowthDurationDays": null,
+      "CultivatedArea": 0.4,
+      "CultivatedAreaUnit": "ACRE",
+      "CultivatedAreaInAcre": null,
+      "InitialSoilCondition": "Well-aerated loamy soil",
+      "InitialNotes": "Good rhizome development observed",
+      "HealthStatus": "HLTY",
+      "CurrentStage": "FRUIT",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": null,
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 2,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 7,
+      "Name": "Nendran Batch 2027-01",
+      "CropTypeId": 1,
+      "VarietyId": 1,
+      "FarmId": 1,
+      "FarmerId": 1,
+      "LandPrepDate": "2026-12-01",
+      "SowingDate": "2026-12-15",
+      "ExpectedGrowthDurationDays": 270,
+      "CultivatedArea": 1.5,
+      "CultivatedAreaUnit": "ACRE",
+      "CultivatedAreaInAcre": 1.5,
+      "InitialSoilCondition": "Well-drained loamy sofdfgfgdskfjldskfjdl with pH 6.5",
+      "InitialNotes": "Planted with proper fff;s",
+      "HealthStatus": null,
+      "CurrentStage": null,
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": null,
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 8,
+      "Name": "Nendran Batch 2027-01",
+      "CropTypeId": 1,
+      "VarietyId": 1,
+      "FarmId": 1,
+      "FarmerId": 1,
+      "LandPrepDate": "2026-12-01",
+      "SowingDate": "2026-12-15",
+      "ExpectedGrowthDurationDays": 270,
+      "CultivatedArea": 4000,
+      "CultivatedAreaUnit": "SQM",
+      "CultivatedAreaInAcre": 0.9884215258686613,
+      "InitialSoilCondition": "Well-drained loamy sofdfgfgdskfjldskfjdl with pH 6.5",
+      "InitialNotes": "Planted with proper fff;s",
+      "HealthStatus": null,
+      "CurrentStage": null,
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": null,
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 9,
+      "Name": "Nendran Batch 2027-01",
+      "CropTypeId": 1,
+      "VarietyId": 1,
+      "FarmId": 1,
+      "FarmerId": 1,
+      "LandPrepDate": "2026-12-01",
+      "SowingDate": "2026-12-15",
+      "ExpectedGrowthDurationDays": 270,
+      "CultivatedArea": 4000,
+      "CultivatedAreaUnit": "SQM",
+      "CultivatedAreaInAcre": 0.9884215258686613,
+      "InitialSoilCondition": "Well-drained loamy sofdfgfgdskfjldskfjdl with pH 6.5",
+      "InitialNotes": "Planted with proper fff;s",
+      "HealthStatus": "MINOR",
+      "CurrentStage": "GROW",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": "2027-09-11",
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 10,
+      "Name": "Nendran Batch 2026-01",
+      "CropTypeId": 1,
+      "VarietyId": 1,
+      "FarmId": 1,
+      "FarmerId": 1,
+      "LandPrepDate": "2025-11-01",
+      "SowingDate": "2025-11-07",
+      "ExpectedGrowthDurationDays": 270,
+      "CultivatedArea": 4000,
+      "CultivatedAreaUnit": "SQM",
+      "CultivatedAreaInAcre": 0.9884215258686613,
+      "InitialSoilCondition": "Well-drained loamy soil with pH 6.5",
+      "InitialNotes": "Planted with proper spacing",
+      "HealthStatus": "MINOR",
+      "CurrentStage": "GROW",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": "2026-08-04",
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 11,
+      "Name": "Nendran Batch 2026-Post-Harvest",
+      "CropTypeId": 1,
+      "VarietyId": 1,
+      "FarmId": 1,
+      "FarmerId": 1,
+      "LandPrepDate": "2024-11-01",
+      "SowingDate": "2024-11-07",
+      "ExpectedGrowthDurationDays": 270,
+      "CultivatedArea": 4000,
+      "CultivatedAreaUnit": "SQM",
+      "CultivatedAreaInAcre": 0.9884215258686613,
+      "InitialSoilCondition": "Well-drained loamy soil with pH 6.5",
+      "InitialNotes": "Planted with proper spacing",
+      "HealthStatus": "MINOR",
+      "CurrentStage": "HARW",
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": 3,
+      "EstdHarvestDate": "2025-08-04",
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 12,
+      "Name": "Nendran Batch 2026-Post-Harvest -",
+      "CropTypeId": 1,
+      "VarietyId": 1,
+      "FarmId": 2,
+      "FarmerId": 2,
+      "LandPrepDate": "2024-11-01",
+      "SowingDate": "2024-11-07",
+      "ExpectedGrowthDurationDays": 270,
+      "CultivatedArea": 4000,
+      "CultivatedAreaUnit": "SQM",
+      "CultivatedAreaInAcre": 0.9884215258686613,
+      "InitialSoilCondition": "Well-drained loamy soil with pH 6.5",
+      "InitialNotes": "Planted with proper spacing",
+      "HealthStatus": null,
+      "CurrentStage": null,
+      "HarvestReadinessInd": 0,
+      "HarvestReadinessPercentage": null,
+      "ListingId": null,
+      "EstdHarvestDate": "2025-08-04",
+      "ActualHarvestDate": null,
+      "ActualYield": null,
+      "HarvestNote": null,
+      "CreatedUser": 2,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    }
+  ],
+  "CropHealthLog": [],
+  "CropListing": [
+    {
+      "Id": 1,
+      "CropId": null,
+      "AvailableQuantity": 11,
+      "AvailabilityDate": "2025-08-15",
+      "IsNegotiable": 1,
+      "MinimumOrderQuantity": 5,
+      "PricePerUnit": 45.5,
+      "Unit": "KG",
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 03:38:56",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "CropId": 11,
+      "AvailableQuantity": 11,
+      "AvailabilityDate": "2025-08-15",
+      "IsNegotiable": 1,
+      "MinimumOrderQuantity": 5,
+      "PricePerUnit": 45.5,
+      "Unit": "KG",
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-03-05 16:41:29",
+      "UpdatedDate": null
+    }
+  ],
+  "GroupListing": [
+    {
+      "Id": 1,
+      "Name": "Group Name 1 -1",
+      "CropId": 11,
+      "AdminContribution": 200,
+      "MinRequiredQuantity": 200,
+      "TotalRequiredQuantity": 1000,
+      "TotalCombinedQuantity": null,
+      "Status": "FORM",
+      "PricePerUnit": 26,
+      "Unit": "KG",
+      "GroupAvailabilityDate": "2025-08-15",
+      "StartDate": "2025-07-10",
+      "FormingDate": "2026-03-03",
+      "TerminationDate": null,
+      "NumberOfParticipants": 1,
+      "CreatedUser": 1,
+      "UpdatedUser": 1,
+      "CreatedDate": "2026-03-03T10:08:50.298Z",
+      "UpdatedDate": "2026-03-03T10:28:37.715Z"
+    }
+  ],
+  "GroupParticipants": [
+    {
+      "Id": 1,
+      "UserId": 2,
+      "CropId": 12,
+      "GroupId": 1,
+      "ContributionQuantity": 200,
+      "contributingQuantityUnit": "'KG'",
+      "JoinedDate": "'2026-03-03T11:39:49.514Z'",
+      "UpdatedDate": null
+    }
+  ],
+  "GroupRequests": [
+    {
+      "Id": 1,
+      "GroupId": 1,
+      "RequestingUserId": 2,
+      "RequestingUserCropId": 12,
+      "Message": "Please let me join group",
+      "ContributingQuantity": 200,
+      "ContributingQuantityUnit": "KG",
+      "CreatedDate": "2026-03-03 11:27:29",
+      "UpdatedDate": "2026-03-03 11:39:49",
+      "Decission": "ACCEPT"
+    }
+  ],
+  "GroupInvitation": [
+    {
+      "Id": 1,
+      "GroupId": 1,
+      "InvitedUserId": 2,
+      "InvitedUserCropId": 12,
+      "Message": "Please join my group nigga",
+      "IsRead": 0,
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-03-03 11:19:37",
+      "UpdatedDate": null
+    }
+  ],
+  "OrderTracker": [],
+  "Negotiation": [
+    {
+      "Id": 1,
+      "ListingId": 3,
+      "InitialPrice": 100,
+      "CurrentPrice": null,
+      "FinalPrice": null,
+      "IsAccepted": 0,
+      "AcceptedBy": null,
+      "IsActive": 1,
+      "CreatedUser": 3,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-03-05 17:06:24",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "ListingId": 3,
+      "InitialPrice": 100,
+      "CurrentPrice": 300,
+      "FinalPrice": null,
+      "IsAccepted": 0,
+      "AcceptedBy": null,
+      "IsActive": 1,
+      "CreatedUser": 3,
+      "UpdatedUser": 1,
+      "CreatedDate": "2026-03-05 17:06:58",
+      "UpdatedDate": "2026-03-05 17:12:08"
+    }
+  ],
+  "NegotiationHistory": [
+    {
+      "Id": 1,
+      "NegotiationId": 2,
+      "Price": 300,
+      "Quantity": 5,
+      "IsAccepted": 1,
+      "CreatedUser": 1,
+      "CreatedDate": "2026-03-05 17:12:08"
+    }
+  ],
+  "OrderDispute": [],
+  "OrderDisputeChat": [],
+  "HealthAlert": [],
+  "File": [],
+  "Notification": [
+    {
+      "Id": 1,
+      "Title": "Notification 1",
+      "Recipient": 3,
+      "NotificationType": "ORDER",
+      "Message": "Lorem ipsum",
+      "EntityType": "Orders",
+      "EntityId": 3,
+      "ActionUrl": "path/to/page",
+      "Priority": "INFO",
+      "IsViewed": 1,
+      "CreatedDate": "2026-03-29 10:11:48"
+    },
+    {
+      "Id": 2,
+      "Title": "Notification 2",
+      "Recipient": 3,
+      "NotificationType": "ORDER",
+      "Message": "Lorem ipsum gen",
+      "EntityType": "Orders",
+      "EntityId": 3,
+      "ActionUrl": "path/to/page2",
+      "Priority": "INFO",
+      "IsViewed": 1,
+      "CreatedDate": "2026-03-29 10:11:48"
+    }
+  ],
+  "OrderAlert": [],
+  "CropLifecycleDefinition": [
+    {
+      "Id": 1,
+      "CropTypeId": 1,
+      "CropVarietyId": 1,
+      "Season": "Year-round",
+      "Region": "Kerala",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "CropTypeId": 1,
+      "CropVarietyId": 2,
+      "Season": "Year-round",
+      "Region": "Kerala",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "CropTypeId": 2,
+      "CropVarietyId": 4,
+      "Season": "Year-round",
+      "Region": "Kerala",
+      "CreatedUser": 2,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 4,
+      "CropTypeId": 3,
+      "CropVarietyId": 4,
+      "Season": "Monsoon to Summer",
+      "Region": "Kerala",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 5,
+      "CropTypeId": 4,
+      "CropVarietyId": 8,
+      "Season": "Oct-Feb (Winter)",
+      "Region": "Kerala",
+      "CreatedUser": 1,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 6,
+      "CropTypeId": 6,
+      "CropVarietyId": 7,
+      "Season": "May-Feb",
+      "Region": "Kerala",
+      "CreatedUser": 2,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:29",
+      "UpdatedDate": null
+    }
+  ],
+  "CropLifeCycleStages": [
+    {
+      "Id": 1,
+      "CropLifecycleDefinitionId": 1,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "MinDaysFromPreviousStage": 0,
+      "MaxDaysFromPreviousStage": 10,
+      "Description": "Land preparation with mulch and compost"
+    },
+    {
+      "Id": 2,
+      "CropLifecycleDefinitionId": 1,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "MinDaysFromPreviousStage": 10,
+      "MaxDaysFromPreviousStage": 15,
+      "Description": "Planted suckers at 2.5m x 2.5m spacing"
+    },
+    {
+      "Id": 3,
+      "CropLifecycleDefinitionId": 1,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "MinDaysFromPreviousStage": 15,
+      "MaxDaysFromPreviousStage": 30,
+      "Description": "Sucker sprouting and initial root development"
+    },
+    {
+      "Id": 4,
+      "CropLifecycleDefinitionId": 1,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "MinDaysFromPreviousStage": 30,
+      "MaxDaysFromPreviousStage": 120,
+      "Description": "Vegetative growth - leaves and pseudo-stem development"
+    },
+    {
+      "Id": 5,
+      "CropLifecycleDefinitionId": 1,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "MinDaysFromPreviousStage": 120,
+      "MaxDaysFromPreviousStage": 180,
+      "Description": "Flowering and inflorescence emergence"
+    },
+    {
+      "Id": 6,
+      "CropLifecycleDefinitionId": 1,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "MinDaysFromPreviousStage": 180,
+      "MaxDaysFromPreviousStage": 240,
+      "Description": "Fruit development and bunch formation"
+    },
+    {
+      "Id": 7,
+      "CropLifecycleDefinitionId": 1,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "MinDaysFromPreviousStage": 240,
+      "MaxDaysFromPreviousStage": 270,
+      "Description": "Maturity - fruit maturation and coloring"
+    },
+    {
+      "Id": 8,
+      "CropLifecycleDefinitionId": 1,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "MinDaysFromPreviousStage": 270,
+      "MaxDaysFromPreviousStage": 300,
+      "Description": "Harvest window - fruit ready for picking"
+    },
+    {
+      "Id": 9,
+      "CropLifecycleDefinitionId": 2,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "MinDaysFromPreviousStage": 0,
+      "MaxDaysFromPreviousStage": 10,
+      "Description": "Land preparation with compost"
+    },
+    {
+      "Id": 10,
+      "CropLifecycleDefinitionId": 2,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "MinDaysFromPreviousStage": 10,
+      "MaxDaysFromPreviousStage": 15,
+      "Description": "Planted tissue culture plantlets"
+    },
+    {
+      "Id": 11,
+      "CropLifecycleDefinitionId": 2,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "MinDaysFromPreviousStage": 15,
+      "MaxDaysFromPreviousStage": 25,
+      "Description": "Plantlet establishment and rooting"
+    },
+    {
+      "Id": 12,
+      "CropLifecycleDefinitionId": 2,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "MinDaysFromPreviousStage": 25,
+      "MaxDaysFromPreviousStage": 100,
+      "Description": "Rapid vegetative growth phase"
+    },
+    {
+      "Id": 13,
+      "CropLifecycleDefinitionId": 2,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "MinDaysFromPreviousStage": 100,
+      "MaxDaysFromPreviousStage": 150,
+      "Description": "Flowering stage"
+    },
+    {
+      "Id": 14,
+      "CropLifecycleDefinitionId": 2,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "MinDaysFromPreviousStage": 150,
+      "MaxDaysFromPreviousStage": 210,
+      "Description": "Fruit development - faster variety"
+    },
+    {
+      "Id": 15,
+      "CropLifecycleDefinitionId": 2,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "MinDaysFromPreviousStage": 210,
+      "MaxDaysFromPreviousStage": 250,
+      "Description": "Maturity stage"
+    },
+    {
+      "Id": 16,
+      "CropLifecycleDefinitionId": 2,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "MinDaysFromPreviousStage": 250,
+      "MaxDaysFromPreviousStage": 270,
+      "Description": "Ready for harvest"
+    },
+    {
+      "Id": 17,
+      "CropLifecycleDefinitionId": 3,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "MinDaysFromPreviousStage": 0,
+      "MaxDaysFromPreviousStage": 30,
+      "Description": "Land preparation - pit digging and filling"
+    },
+    {
+      "Id": 18,
+      "CropLifecycleDefinitionId": 3,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "MinDaysFromPreviousStage": 30,
+      "MaxDaysFromPreviousStage": 60,
+      "Description": "Seednut plantation in pits"
+    },
+    {
+      "Id": 19,
+      "CropLifecycleDefinitionId": 3,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "MinDaysFromPreviousStage": 60,
+      "MaxDaysFromPreviousStage": 180,
+      "Description": "Seednut germination - root and shoot development"
+    },
+    {
+      "Id": 20,
+      "CropLifecycleDefinitionId": 3,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "MinDaysFromPreviousStage": 180,
+      "MaxDaysFromPreviousStage": 1200,
+      "Description": "Vegetative growth - tree establishment"
+    },
+    {
+      "Id": 21,
+      "CropLifecycleDefinitionId": 3,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "MinDaysFromPreviousStage": 1200,
+      "MaxDaysFromPreviousStage": 1800,
+      "Description": "Flowering stage in mature plants"
+    },
+    {
+      "Id": 22,
+      "CropLifecycleDefinitionId": 3,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "MinDaysFromPreviousStage": 1800,
+      "MaxDaysFromPreviousStage": 2200,
+      "Description": "Fruit development - nut maturation"
+    },
+    {
+      "Id": 23,
+      "CropLifecycleDefinitionId": 3,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "MinDaysFromPreviousStage": 2200,
+      "MaxDaysFromPreviousStage": 2400,
+      "Description": "Maturity - nuts ready for harvest"
+    },
+    {
+      "Id": 24,
+      "CropLifecycleDefinitionId": 3,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "MinDaysFromPreviousStage": 2400,
+      "MaxDaysFromPreviousStage": 2500,
+      "Description": "Harvest window"
+    },
+    {
+      "Id": 25,
+      "CropLifecycleDefinitionId": 4,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "MinDaysFromPreviousStage": 0,
+      "MaxDaysFromPreviousStage": 15,
+      "Description": "Land preparation with organic matter"
+    },
+    {
+      "Id": 26,
+      "CropLifecycleDefinitionId": 4,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "MinDaysFromPreviousStage": 15,
+      "MaxDaysFromPreviousStage": 25,
+      "Description": "Cuttings planted on support structures"
+    },
+    {
+      "Id": 27,
+      "CropLifecycleDefinitionId": 4,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "MinDaysFromPreviousStage": 25,
+      "MaxDaysFromPreviousStage": 45,
+      "Description": "Cutting rooting and establishment"
+    },
+    {
+      "Id": 28,
+      "CropLifecycleDefinitionId": 4,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "MinDaysFromPreviousStage": 45,
+      "MaxDaysFromPreviousStage": 120,
+      "Description": "Vine growth along support - leaf development"
+    },
+    {
+      "Id": 29,
+      "CropLifecycleDefinitionId": 4,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "MinDaysFromPreviousStage": 120,
+      "MaxDaysFromPreviousStage": 180,
+      "Description": "Flowering - white flowers appearing"
+    },
+    {
+      "Id": 30,
+      "CropLifecycleDefinitionId": 4,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "MinDaysFromPreviousStage": 180,
+      "MaxDaysFromPreviousStage": 200,
+      "Description": "Fruit flowering to maturation"
+    },
+    {
+      "Id": 31,
+      "CropLifecycleDefinitionId": 4,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "MinDaysFromPreviousStage": 200,
+      "MaxDaysFromPreviousStage": 240,
+      "Description": "Berries ripen - color change from green to red"
+    },
+    {
+      "Id": 32,
+      "CropLifecycleDefinitionId": 4,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "MinDaysFromPreviousStage": 240,
+      "MaxDaysFromPreviousStage": 260,
+      "Description": "Harvest ready - berries dried to black peppercorns"
+    },
+    {
+      "Id": 33,
+      "CropLifecycleDefinitionId": 5,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "MinDaysFromPreviousStage": 0,
+      "MaxDaysFromPreviousStage": 12,
+      "Description": "Land preparation - beds formed with compost"
+    },
+    {
+      "Id": 34,
+      "CropLifecycleDefinitionId": 5,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "MinDaysFromPreviousStage": 12,
+      "MaxDaysFromPreviousStage": 18,
+      "Description": "Seedlings transplanted in field"
+    },
+    {
+      "Id": 35,
+      "CropLifecycleDefinitionId": 5,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "MinDaysFromPreviousStage": 18,
+      "MaxDaysFromPreviousStage": 35,
+      "Description": "Seedling establishment and root development"
+    },
+    {
+      "Id": 36,
+      "CropLifecycleDefinitionId": 5,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "MinDaysFromPreviousStage": 35,
+      "MaxDaysFromPreviousStage": 50,
+      "Description": "Vegetative growth - flowering begins"
+    },
+    {
+      "Id": 37,
+      "CropLifecycleDefinitionId": 5,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "MinDaysFromPreviousStage": 50,
+      "MaxDaysFromPreviousStage": 60,
+      "Description": "Flowering - yellow flowers opening"
+    },
+    {
+      "Id": 38,
+      "CropLifecycleDefinitionId": 5,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "MinDaysFromPreviousStage": 60,
+      "MaxDaysFromPreviousStage": 75,
+      "Description": "Fruit development - green fruits growing"
+    },
+    {
+      "Id": 39,
+      "CropLifecycleDefinitionId": 5,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "MinDaysFromPreviousStage": 75,
+      "MaxDaysFromPreviousStage": 85,
+      "Description": "Maturity - fruits turning red"
+    },
+    {
+      "Id": 40,
+      "CropLifecycleDefinitionId": 5,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "MinDaysFromPreviousStage": 85,
+      "MaxDaysFromPreviousStage": 90,
+      "Description": "Harvest ready"
+    },
+    {
+      "Id": 41,
+      "CropLifecycleDefinitionId": 6,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "MinDaysFromPreviousStage": 0,
+      "MaxDaysFromPreviousStage": 20,
+      "Description": "Land preparation - beds with drainage"
+    },
+    {
+      "Id": 42,
+      "CropLifecycleDefinitionId": 6,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "MinDaysFromPreviousStage": 20,
+      "MaxDaysFromPreviousStage": 30,
+      "Description": "Seed rhizomes planted (20-25g pieces)"
+    },
+    {
+      "Id": 43,
+      "CropLifecycleDefinitionId": 6,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "MinDaysFromPreviousStage": 30,
+      "MaxDaysFromPreviousStage": 75,
+      "Description": "Rhizome germination and sprouting"
+    },
+    {
+      "Id": 44,
+      "CropLifecycleDefinitionId": 6,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "MinDaysFromPreviousStage": 75,
+      "MaxDaysFromPreviousStage": 150,
+      "Description": "Vegetative growth - leaf and aerial shoot development"
+    },
+    {
+      "Id": 45,
+      "CropLifecycleDefinitionId": 6,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "MinDaysFromPreviousStage": 150,
+      "MaxDaysFromPreviousStage": 200,
+      "Description": "Flowering and flowering plant stage"
+    },
+    {
+      "Id": 46,
+      "CropLifecycleDefinitionId": 6,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "MinDaysFromPreviousStage": 200,
+      "MaxDaysFromPreviousStage": 270,
+      "Description": "Rhizome development and enlargement"
+    },
+    {
+      "Id": 47,
+      "CropLifecycleDefinitionId": 6,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "MinDaysFromPreviousStage": 270,
+      "MaxDaysFromPreviousStage": 285,
+      "Description": "Maturity - rhizome mature for harvest"
+    },
+    {
+      "Id": 48,
+      "CropLifecycleDefinitionId": 6,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "MinDaysFromPreviousStage": 285,
+      "MaxDaysFromPreviousStage": 300,
+      "Description": "Harvest window - ready for digging"
+    }
+  ],
+  "CropStageProgress": [
+    {
+      "Id": 1,
+      "CropId": 7,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "EstStartDate": "2026-12-15",
+      "EstEndDate": "2026-12-25",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "CropId": 7,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "EstStartDate": "2026-12-25",
+      "EstEndDate": "2026-12-30",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "CropId": 7,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "EstStartDate": "2026-12-30",
+      "EstEndDate": "2027-01-14",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 4,
+      "CropId": 7,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "EstStartDate": "2027-01-14",
+      "EstEndDate": "2027-04-14",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 5,
+      "CropId": 7,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "EstStartDate": "2027-04-14",
+      "EstEndDate": "2027-06-13",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 6,
+      "CropId": 7,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "EstStartDate": "2027-06-13",
+      "EstEndDate": "2027-08-12",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 7,
+      "CropId": 7,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "EstStartDate": "2027-08-12",
+      "EstEndDate": "2027-09-11",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 8,
+      "CropId": 7,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "EstStartDate": "2027-09-11",
+      "EstEndDate": "2027-10-11",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:03:37",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 9,
+      "CropId": 8,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "EstStartDate": "2026-12-15",
+      "EstEndDate": "2026-12-25",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 10,
+      "CropId": 8,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "EstStartDate": "2026-12-25",
+      "EstEndDate": "2026-12-30",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 11,
+      "CropId": 8,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "EstStartDate": "2026-12-30",
+      "EstEndDate": "2027-01-14",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 12,
+      "CropId": 8,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "EstStartDate": "2027-01-14",
+      "EstEndDate": "2027-04-14",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 13,
+      "CropId": 8,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "EstStartDate": "2027-04-14",
+      "EstEndDate": "2027-06-13",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 14,
+      "CropId": 8,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "EstStartDate": "2027-06-13",
+      "EstEndDate": "2027-08-12",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 15,
+      "CropId": 8,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "EstStartDate": "2027-08-12",
+      "EstEndDate": "2027-09-11",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 16,
+      "CropId": 8,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "EstStartDate": "2027-09-11",
+      "EstEndDate": "2027-10-11",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:04:49",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 17,
+      "CropId": 9,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "EstStartDate": "2026-12-15",
+      "EstEndDate": "2026-12-25",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 18,
+      "CropId": 9,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "EstStartDate": "2026-12-25",
+      "EstEndDate": "2026-12-30",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 19,
+      "CropId": 9,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "EstStartDate": "2026-12-30",
+      "EstEndDate": "2027-01-14",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 20,
+      "CropId": 9,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "EstStartDate": "2027-01-14",
+      "EstEndDate": "2027-04-14",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 21,
+      "CropId": 9,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "EstStartDate": "2027-04-14",
+      "EstEndDate": "2027-06-13",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 22,
+      "CropId": 9,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "EstStartDate": "2027-06-13",
+      "EstEndDate": "2027-08-12",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 23,
+      "CropId": 9,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "EstStartDate": "2027-08-12",
+      "EstEndDate": "2027-09-11",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 24,
+      "CropId": 9,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "EstStartDate": "2027-09-11",
+      "EstEndDate": "2027-10-11",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:13:34",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 25,
+      "CropId": 10,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "EstStartDate": "2025-11-07",
+      "EstEndDate": "2025-11-17",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 26,
+      "CropId": 10,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "EstStartDate": "2025-11-17",
+      "EstEndDate": "2025-11-22",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 27,
+      "CropId": 10,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "EstStartDate": "2025-11-22",
+      "EstEndDate": "2025-12-07",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 28,
+      "CropId": 10,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "EstStartDate": "2025-12-07",
+      "EstEndDate": "2026-03-07",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 29,
+      "CropId": 10,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "EstStartDate": "2026-03-07",
+      "EstEndDate": "2026-05-06",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 30,
+      "CropId": 10,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "EstStartDate": "2026-05-06",
+      "EstEndDate": "2026-07-05",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 31,
+      "CropId": 10,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "EstStartDate": "2026-07-05",
+      "EstEndDate": "2026-08-04",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 32,
+      "CropId": 10,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "EstStartDate": "2026-08-04",
+      "EstEndDate": "2026-09-03",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 02:53:27",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 33,
+      "CropId": 11,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "EstStartDate": "2024-11-07",
+      "EstEndDate": "2024-11-17",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 34,
+      "CropId": 11,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "EstStartDate": "2024-11-17",
+      "EstEndDate": "2024-11-22",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 35,
+      "CropId": 11,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "EstStartDate": "2024-11-22",
+      "EstEndDate": "2024-12-07",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 36,
+      "CropId": 11,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "EstStartDate": "2024-12-07",
+      "EstEndDate": "2025-03-07",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 37,
+      "CropId": 11,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "EstStartDate": "2025-03-07",
+      "EstEndDate": "2025-05-06",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 38,
+      "CropId": 11,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "EstStartDate": "2025-05-06",
+      "EstEndDate": "2025-07-05",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 39,
+      "CropId": 11,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "EstStartDate": "2025-07-05",
+      "EstEndDate": "2025-08-04",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 40,
+      "CropId": 11,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "EstStartDate": "2025-08-04",
+      "EstEndDate": "2025-09-03",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-02-27 03:04:30",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 41,
+      "CropId": 12,
+      "StageName": "LAND",
+      "StageOrder": 1,
+      "EstStartDate": "2024-11-07",
+      "EstEndDate": "2024-11-17",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 42,
+      "CropId": 12,
+      "StageName": "SOW",
+      "StageOrder": 2,
+      "EstStartDate": "2024-11-17",
+      "EstEndDate": "2024-11-22",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 43,
+      "CropId": 12,
+      "StageName": "GERM",
+      "StageOrder": 3,
+      "EstStartDate": "2024-11-22",
+      "EstEndDate": "2024-12-07",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 44,
+      "CropId": 12,
+      "StageName": "GROW",
+      "StageOrder": 4,
+      "EstStartDate": "2024-12-07",
+      "EstEndDate": "2025-03-07",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 45,
+      "CropId": 12,
+      "StageName": "FLOW",
+      "StageOrder": 5,
+      "EstStartDate": "2025-03-07",
+      "EstEndDate": "2025-05-06",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 46,
+      "CropId": 12,
+      "StageName": "FRUIT",
+      "StageOrder": 6,
+      "EstStartDate": "2025-05-06",
+      "EstEndDate": "2025-07-05",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 47,
+      "CropId": 12,
+      "StageName": "MAT",
+      "StageOrder": 7,
+      "EstStartDate": "2025-07-05",
+      "EstEndDate": "2025-08-04",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 48,
+      "CropId": 12,
+      "StageName": "HARW",
+      "StageOrder": 8,
+      "EstStartDate": "2025-08-04",
+      "EstEndDate": "2025-09-03",
+      "ActualStartDate": null,
+      "ActualEndDate": null,
+      "Notes": null,
+      "CreatedDate": "2026-03-03 11:16:55",
+      "UpdatedDate": null
+    }
+  ],
+  "CropStageCaps": [
+    {
+      "Id": 1,
+      "StageName": "LAND",
+      "Cap": 0.6,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:09",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 2,
+      "StageName": "SOW",
+      "Cap": 0.6,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:09",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 3,
+      "StageName": "GERM",
+      "Cap": 0.6,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:09",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 4,
+      "StageName": "GROW",
+      "Cap": 0.75,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:09",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 5,
+      "StageName": "FLOW",
+      "Cap": 0.85,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:09",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 6,
+      "StageName": "FRUIT",
+      "Cap": 0.95,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:09",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 7,
+      "StageName": "MAT",
+      "Cap": 1,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:09",
+      "UpdatedDate": null
+    },
+    {
+      "Id": 8,
+      "StageName": "HARW",
+      "Cap": 1,
+      "CreatedUser": null,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-02-27 01:48:09",
+      "UpdatedDate": null
+    }
+  ],
+  "Orders": [
+    {
+      "Id": 1,
+      "ListingEntityType": "I",
+      "ListingId": 3,
+      "GroupId": null,
+      "ListerId": null,
+      "BuyerId": 3,
+      "Quantity": 5,
+      "OrderStatus": "PEND",
+      "IsNegotiated": 0,
+      "NegotiationId": null,
+      "FinalPrice": 200,
+      "EstimatedFulfillmentDate": "2025-08-20",
+      "ActualFulfillmentDate": null,
+      "DeliveryAddressId": null,
+      "DeliveryOption": null,
+      "PaymentMethod": null,
+      "IsPaymentComplete": 0,
+      "CreatedUser": 3,
+      "UpdatedUser": null,
+      "CreatedDate": "2026-03-05 17:00:06",
+      "UpdatedDate": null
+    }
+  ],
+  "ReportGenerationStatusLov": [
+    {
+      "Code": "NEW",
+      "Description": "New"
+    },
+    {
+      "Code": "PROCESSING",
+      "Description": "Processing"
+    },
+    {
+      "Code": "COMPLETE",
+      "Description": "Complete"
+    }
+  ],
+  "ReprotType": [
+    {
+      "Code": "CWY",
+      "Description": "Crop Wise Yeild",
+      "UserRole": "FARMER"
+    },
+    {
+      "Code": "OAS",
+      "Description": "Order and Sales",
+      "UserRole": "FARMER"
+    },
+    {
+      "Code": "GSP",
+      "Description": "Group Selling Participants",
+      "UserRole": "FARMER"
+    }
+  ],
+  "ReportGenerationTracker": []
+}

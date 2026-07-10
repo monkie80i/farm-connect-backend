@@ -8,14 +8,8 @@ const LOVs = [
     "GroupVisibilityStatusLov",
     "OrderStatusLov",
     "DisputeTypesLov",
-    // "DisputeStatusLov",
-    "LandAreaUnitLov"
-
-];
-
-module.exports = LOVs;
-
-/*
+    "DisputeStatusLov",
+    "LandAreaUnitLov",
     "ListingStatus",
     "CropUnitLov",
     "OrderStageLov",
@@ -26,5 +20,8 @@ module.exports = LOVs;
     "NotificationTypeLov",
     "NotificationPriorityLov",
     "ReportGenerationStatusLov",
-    "test"
-     */
+    "ReportGenerationStatusLov"
+
+];
+
+module.exports = LOVs;

@@ -1,7 +1,15 @@
+/*
+this utility is for migrations
+1. Migrations files containing sql changes that need to be applied on the DB
+2. They should be put inside ./migrations folder with proper naming 
+  > DDMMYYY_HHMM(AM/PM)_00000(prev + 1)_any_user_friendly_name.sql 
+3. To run migrations
+  > node migrations.js --help
+*/
 const fs = require('fs');
 const path = require('path');
-const db = require('./test-db');
-const migrationsDir = path.join(__dirname,'migrations-v2');
+const db = require('./db');
+const migrationsDir = path.join(__dirname,'migrations');
 const LOVs  = require("./generic-lookup-tables");
 let genericLookupList = LOVs.map(row => row.toString().trim());
 
@@ -127,9 +135,9 @@ function getMigrationStatus() {
     const pending = files.filter(file => !executed.includes(file));
 
     return {
-        all: files,
-        executed,
-        pending
+      files: files,
+      executed: executed,
+      pending: pending
     };
 }
 
@@ -156,8 +164,8 @@ function runNormalMigrations() {
   createMigrationsTable();
   const {files,executed,pending} = getMigrationStatus();
 
-  if(files.length < 0) {
-    console.log("No new migrations to be done.");
+  if(pending.length < 1) {
+    console.log("Migrations Upto date.");
     return;
   }
 
@@ -171,12 +179,12 @@ function runNormalMigrations() {
 
   console.log('Migrations complete for the following files');
   pending.forEach( (file,index) => {console.log(`\t${index+1}. ${file}`)});
+  return;
 }
-
 // Normal migrations end here
 
-async function main() {
-  let inputArg = process.argv.slice(2).length > 0 ? process.argv.slice(2).pop().toString().trim(): "none"; 
+
+async function migrate(inputArg) {
 
   switch(inputArg) {
     case("--generic"):
@@ -217,8 +225,15 @@ async function main() {
   }
 }
 
-main();
+(() => { 
+  const inputArg = process.argv.slice(2).length > 0 ? process.argv.slice(2).pop().toString().trim(): "none"; 
+  migrate(inputArg);
+})();
 
+
+module.exports = {
+  migrate,
+};
 
 
 

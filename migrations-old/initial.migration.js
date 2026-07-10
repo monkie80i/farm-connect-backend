@@ -550,6 +550,7 @@ db.exec(`
     
 `);
 
+// added to V2
 
 
 console.log("main tables created successfully.");

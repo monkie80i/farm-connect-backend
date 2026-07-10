@@ -21,4 +21,14 @@
     - can also individually run, main tables and LOV table migrations separately
     (const args = process.argv.slice(2); )
 
+5. Objective, replace original db with new db, will all the exact tables structre and data, but with new migration method.
+    - dump all currunt data from farm connect
+    - create new farmconnect db
+    - run migrations on new farm connect db
+    - seed all the dumped data to farm connect
+
+6. make the migrations correct in V2. - done
+
+7. a combined manage.py which does migration and hauling; - not needed at the moment
+
 

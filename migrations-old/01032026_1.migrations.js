@@ -4,3 +4,5 @@ db.exec(`
     ALTER TABLE GroupRequests ADD Decission NVARCHAR(10);
     ALTER TABLE GroupRequests DROP IsAccepted; 
 `);
+
+// added to V2

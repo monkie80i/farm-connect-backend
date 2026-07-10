@@ -37,3 +37,5 @@ db.exec(`
         FOREIGN KEY (NegotiationId) REFERENCES Negotiation(Id) ON DELETE SET NULL
     );    
 `);
+
+// added to V2
