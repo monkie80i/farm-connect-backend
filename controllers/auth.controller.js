@@ -5,7 +5,7 @@ const db = require('../db');
 const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
 
 
-const registerFarmer = (req, res) => {
+const registerUser = (req, res) => {
   try {
     const {
       firstName,
@@ -46,17 +46,17 @@ const registerFarmer = (req, res) => {
 
 const loginUser = (req, res) => {
     try {
-      const { email, password } = req.body;
-      console.log(req.body)
+      const { email, password, role } = req.body;
       const user = authService.login(email, password);
 
-      if (user) {
-
+      if (user && user.Role === role.toUpperCase()) {
         const token = jwt.sign(
             {userId: user.Id, role: user.Role},
             SECRET_KEY,
             { expiresIn: "1d"}
         );
+
+        delete user["PasswordHash"];
 
         res.status(200).json({ message: "success", data: user , token: token });
       } else {
@@ -86,5 +86,5 @@ const runsql = (req,res) => {
 };
 
 module.exports = {
-  registerFarmer,loginUser,runsql
+  registerUser,loginUser,runsql
 };

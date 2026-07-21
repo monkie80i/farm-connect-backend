@@ -29,6 +29,6 @@
 
 6. make the migrations correct in V2. - done
 
-7. a combined manage.py which does migration and hauling; - not needed at the moment
+7. we need a tracker for load
 
 

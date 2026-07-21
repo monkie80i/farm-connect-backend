@@ -20,13 +20,12 @@ app.get("/", (req,res)=>{
     res.status(200).sendFile(path.join(__dirname,'public','index.html'));
 });
 
-app.use(baseUrl + "/support", supportRoutes);
+app.use(baseUrl + "/admin/",adminRoutes); 
 app.use(baseUrl + "/auth/",authRoutes);
-app.use(baseUrl + "/user/",userRoutes);
-app.use(baseUrl + "/farmer/",farmerRoutes);
 app.use(baseUrl + "/buyer/",buyerRoutes);   
-app.use(baseUrl + "/admin/",adminRoutes);   
-
+app.use(baseUrl + "/farmer/",farmerRoutes);
+app.use(baseUrl + "/support", supportRoutes);
+app.use(baseUrl + "/user/",userRoutes);
 
 
 app.listen(PORT,() => {
