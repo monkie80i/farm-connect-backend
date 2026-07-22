@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const SECRET_KEY = process.env.JWT_SECRET;
 const db = require('../db');
 const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
+const { getUserById } = require("../services/user.service");
 
 
 const registerUser = (req, res) => {
@@ -85,6 +86,24 @@ const runsql = (req,res) => {
   }
 };
 
+const verifyEmail = (req,res) => {
+  try {
+    const { id,hash } = req.query;
+    const user = getUserById(id);
+
+    if(user) { 
+      authService.verifyEmail(id,hash)   
+    } else {
+      res.status(404).json({ message: "User Not Found", data: null });
+    }    
+    res.status(200).json({ message: "success", data: 0 })
+    
+  } catch (error) {
+    console.log("user/verify-email", error);
+      return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
 module.exports = {
-  registerUser,loginUser,runsql
+  registerUser,loginUser,runsql,verifyEmail
 };
