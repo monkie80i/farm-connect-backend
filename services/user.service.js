@@ -39,8 +39,76 @@ const editProfileAndIdVerification = (userId, profileData) => {
   db.prepare(`UPDATE Users SET IsVerificationFilled = TRUE, UpdateDate = CURRENT_TIMESTAMP WHERE Id = ?`)
     .run(userId);
 
-  console.log("Profile and verification record created for user id:", userId);
 };
+
+const editProfileAndIdVerfication_v2 = (userId, profileData) => {
+  const {
+    firstName,
+    lastName,
+    dob,
+    address,
+    city,
+    state,
+    farmName,
+    farmAddress,
+    farmCity,
+    farmState,
+    totalCultivableArea,
+    landUnit,
+    crops,
+    // landProofPath,
+    idProofType,
+    idProofPath,
+    paymentMethods,
+    upiId,
+  } = profileData;
+
+  const txn = db.transaction(() => {
+
+    db.prepare(
+      `INSERT INTO UserProfile (UserId,Address,City,State,IdProofType,IdProofpath,UPIId) VALUES (?,?,?,?,?,?,?)`,
+    ).run(userId, address, city, state, idProofType, idProofPath, upiId);
+
+    paymentMethods?.forEach((method) => {
+      db.prepare(
+        `INSERT INTO FarmerPaymentMethod (UserId,PaymentMethod) VALUES (?,?)`,
+      ).run(userId, method);
+    });
+
+    let farmId;
+    if(farmName) {
+      farmId = db
+      .prepare(
+        `INSERT INTO Farm (UserId,FarmName,Address,City,State,TotalCultivableArea,LandUnit,OwnershipProofPath,IsDefault) VALUES (?,?,?,?,?,?,?,?)`,
+      )
+      .run(
+        userId,
+        farmName,
+        farmAddress,
+        farmCity,
+        farmState,
+        totalCultivableArea,
+        landUnit,
+        true,
+      ).lastInsertRowid;
+    }
+    
+    crops?.forEach((crop) => {
+      db.prepare(
+        `INSERT INTO FarmCropTypes (FarmId,CropTypeId) VALUES (?,?)`,
+      ).run(farmId, crop);
+    });
+
+    db.prepare(
+      `UPDATE Users SET FirstName = ?, LastName = ?,DateOfBirth = ?, IsVerificationFilled = 1, UpdateDate = CURRENT_TIMESTAMP WHERE Id = ?`,
+    ).run(firstName, lastName,dob, userId);
+
+    // throw new Error("__ROLLBACK__"); // force rollback
+  });
+
+  txn();
+};
+
 
 const getUserById = (userId) => {
   const stmnt = db.prepare(`SELECT * FROM Users WHERE Id = ?`);
@@ -64,7 +132,7 @@ const userExists = (userId) => {
 
 
 module.exports = {
-  editProfileAndIdVerification,
+  editProfileAndIdVerification,editProfileAndIdVerfication_v2,
   getUserById,userExists
 };
 

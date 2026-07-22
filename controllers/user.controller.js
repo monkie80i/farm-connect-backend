@@ -12,12 +12,20 @@ const editProfileAndIdVerfication = (req, res) => {
     const id = Number(req.params.userId);
     const user = authService.getUserByUserId(id);
     if (user) {
-      userService.editProfileAndIdVerification(id, req.body);
-      res.status(200).json({ message: "success", data: null });
+      if(user.IsVerificationFilled === 0) {
+        userService.editProfileAndIdVerfication_v2(id, req.body);
+        res.status(200).json({ message: "success", data: null });
+      } else {
+        res.status(400).json({ message: "Forbidden - Already filled", data: null });
+      }
+      
     } else {
       res.status(404).json({ message: "User Not Found", data: null });
     }
   } catch (error) {
+    if (error.message !== '__ROLLBACK__') {
+        res.status(200).json({ message: "success", data: null });
+    }; 
     console.log("user/:id", error);
     return errorResponse(res,"Something went wrong!",500,error.toString());
   }
