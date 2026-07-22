@@ -54,7 +54,7 @@ const login = (email,password) => {
 };
 
 const sendVerificationEmail = (userId,role,hash,userEmail) => {
-    const url = `http://${role.toLowerCase()}.shahzan.com/verify-email?id=${userId}&hash=${hash}`;
+    const url = `http://${role.toLowerCase()}.shahzan.com:4200/verify-email?id=${userId}&hash=${hash}`;
     const message = `
     ###############################################
     Farm Connect
@@ -84,14 +84,15 @@ const createEmailHash = () => {
 const verifyEmail = (id,hash) => {
     const txn = db.transaction(() => {
         const row = db.prepare('SELECT * FROM EmaiVerifications WHERE UserId = ?').get(id);
+        if(!row) {
+            throw new Error("Already Activated");
+            return;
+        }
         if(row.CryptoHash === hash) {
-            console.log("matching")
             db.prepare("DELETE FROM EmaiVerifications WHERE Id = ?").run(row.Id);
-            console.log(4)
             db.prepare("UPDATE Users SET IsEmailVerified = 1  WHERE Id = ?").run(id);
-            console.log(5)
         } else {
-            throw new Error("Hash_Dont_Match")
+            throw new Error("Wrong Hash")
         }
     });
 
