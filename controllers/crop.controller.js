@@ -51,7 +51,7 @@ const getCropDetails = (req, res) => {
     const crop = db.prepare(`SELECT * FROM Crop WHERE Id = ?`).get(cropId);
 
     if (!crop) {
-      return res.status(404).json({ message: "Crop not found!" });
+      return notFound(res,"Crop not found!" );
     }
 
     return successResponse(res, toCamelCaseObject(crop));
@@ -190,7 +190,7 @@ const deleteCrop = (req, res) => {
     const result = stmt.run(cropId);
 
     if (result.changes === 0) {
-      return res.status(404).json({ message: "Crop not found!", data: null });
+      return notFound(res,"Crop not found!");
     }
 
     return successResponse(res, null, "Crop deleted successfully!");
@@ -274,7 +274,6 @@ const cropLifecycleStageObserved = (req, res) => {
     );
 
     if (!curntProgState || curntProgState.cropId !== cropId) {
-      res.status(404).json({ message: "Crop Stage Not Found", error: null });
       return notFound(res, "Crop Stage Not Found");
     }
 

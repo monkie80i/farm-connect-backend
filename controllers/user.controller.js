@@ -14,17 +14,17 @@ const editProfileAndIdVerfication = (req, res) => {
     if (user) {
       if(user.IsVerificationFilled === 0) {
         userService.editProfileAndIdVerfication_v2(id, req.body);
-        res.status(200).json({ message: "success", data: null });
+        return successResponse(res);
       } else {
-        res.status(400).json({ message: "Forbidden - Already filled", data: null });
+        return errorResponse(res,"Forbidden - Already filled",400);
       }
       
     } else {
-      res.status(404).json({ message: "User Not Found", data: null });
+      return notFound(res,"User Not Found!");
     }
   } catch (error) {
     if (error.message !== '__ROLLBACK__') {
-        res.status(200).json({ message: "success", data: null });
+      return successResponse(res);
     }; 
     console.log("user/:id", error);
     return errorResponse(res,"Something went wrong!",500,error.toString());
@@ -40,9 +40,9 @@ const getUserDetails = (req, res) => {
     console.log("User details retrieved:", user);
     if (user) {
       const data = utils.toCamelCaseObject(user);
-      res.status(200).json({ message: "success", data: data });
+      return successResponse(res,data);
     } else {
-      res.status(404).json({ message: "Not Found", data: null });
+      return notFound(res);
     }
   } catch (error) {
     console.log("user/:id", error);
@@ -57,8 +57,7 @@ const getUserProfileDetails = (req, res) => {
     
     const user = userService.getUserById(userId);
     if(!user) {
-      res.status(404).json({ message: "User Not Found!", data: null })
-      return;
+      return notFound(res,"User Not Found!");
     }
 
     const role = user.role;
@@ -94,7 +93,7 @@ const getUserProfileDetails = (req, res) => {
     }
 
     const data = toCamelCaseObject(profileDetails);
-    res.status(200).json({ message: "success", data: data });
+    return successResponse(res,data);
 
   } catch (error) {
     console.log("getUserProfileDetails", error);
@@ -114,8 +113,7 @@ const editUserDetails = (req,res) => {
     const user = toCamelCaseObject(stmnt.get(id));
 
     if(!user) {
-      res.status(404).json({ message: "User Not Found!", data: null })
-      return;
+      return notFound(res,"User Not Found!");
     }
 
     if(user.userName !== username) {
@@ -123,8 +121,7 @@ const editUserDetails = (req,res) => {
       const usernameEsixts = usernameStmnt.get(username);
 
       if(usernameEsixts) {
-        res.status(409).json({ message: "Username already exists.", data: null })
-        return;
+        return errorResponse(res,"Username already exists!",409);
       }
     }
 
@@ -150,7 +147,7 @@ const editUserDetails = (req,res) => {
       updateStmnt.run(username, id);
     }
 
-    res.status(200).json({ message: "Success", data: null });
+    return successResponse(res);
   
   } catch (error) {
     console.log("editUserDetails", error);
@@ -165,7 +162,7 @@ const editProfileDetails = (req,res) => {
     const user = userService.getUserById(userId);
 
     if(!user) {
-      res.status(404).json({ message: "User Not Found!", data: null })
+      return notFound(res,"User Not Found!");
       return;
     }
 
@@ -174,8 +171,7 @@ const editProfileDetails = (req,res) => {
     const profileDetails = stmnt.get(userId);
 
     if(!profileDetails) {
-      res.status(404).json({ message: "Profile Not Found!", data: null })
-      return;
+      return notFound(res,"Profile Not Found!");
     }
 
     const {
@@ -363,7 +359,7 @@ const editProfileDetails = (req,res) => {
       console.log("final query", query);
       db.exec(query);
 
-      res.status(200).json({ message: "Success", data: null });
+      return successResponse(res);
     
   } catch (error) {
     console.log("editProfileDetails", error);
@@ -380,8 +376,7 @@ const getAllUserNegotiations = (req,res) => {
     const user = userService.getUserById(userId);
 
     if(!user) {
-      res.status(404).json({ message: "User Not Found!", data: null })
-      return;
+      return notFound(res,"User Not Found!");
     }
 
     const role = user.role;
@@ -402,7 +397,7 @@ const getAllUserNegotiations = (req,res) => {
       `).all(userId));
     }
 
-    res.status(200).json({ message: "Success", data: negotiations });
+    return successResponse(res,negotiations);
 
   } catch (error) {
     console.log("getAllUserNegotiations", error);

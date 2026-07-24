@@ -23,7 +23,6 @@ const registerUser = (req, res) => {
 
     const emailExists = authService.checkEmailExists(email);
     if (emailExists) {
-      res.status(409).json({ message: "Email Already Exists", data: null });
       return errorResponse(res,"Email Already Exists",409)
     }
 
@@ -61,9 +60,9 @@ const loginUser = (req, res) => {
 
         delete user["PasswordHash"];
 
-        res.status(200).json({ message: "success", data: toCamelCaseObject(user) , token: token });
+        return successResponse(res,{token:token, user:toCamelCaseObject(user)});
       } else {
-        res.status(401).json({ message: "Login Failed", data: null });
+        errorResponse(res,"Login Failed",401);
       }
 
     } catch (error) {
@@ -80,8 +79,7 @@ const runsql = (req,res) => {
     const result = stmnt.all();
     console.log(result)
 
-    res.status(200).json({ message: "success", data: result })
-    
+    return successResponse(res,result);
   } catch (error) {
     console.log("user/runsql", error);
       return errorResponse(res,"Something went wrong!",500,error.toString());
@@ -96,10 +94,9 @@ const verifyEmail = (req,res) => {
     if(user) { 
       authService.verifyEmail(id,hash)   
     } else {
-      res.status(404).json({ message: "User Not Found", data: null });
+      return notFound(res,"User Not Found");
     }    
-    res.status(200).json({ message: "success", data: 0 })
-    
+    return successResponse(res);
   } catch (error) {
     console.log("user/verify-email", error);
       return errorResponse(res,"Something went wrong!",500,error.toString());

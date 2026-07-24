@@ -55,7 +55,7 @@ const getFarmerDashboard = (req, res) => {
       recentOrders: toCamelCaseObject(recentOrders),
     };
 
-    res.status(200).json({ message: "success", data: dashboardData });
+    return successResponse(res,dashboardData);
   } catch (error) {
     console.log("getFarmerDashboard", error);
     return errorResponse(res,"Something went wrong!",500,error.toString());
