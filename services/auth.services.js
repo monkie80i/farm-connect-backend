@@ -33,8 +33,12 @@ const registerUser = (
         const userId = info.lastInsertRowid;
         const hash = createEmailHash();
 
-        db.prepare('INSERT INTO EmaiVerifications (UserId,CryptoHash) VALUES (?,?)').run(userId,hash);
-        sendVerificationEmail(userId,role,hash,email);
+        if(role === "ADMIN") {
+            db.prepare("UPDATE Users SET IsEmailVerified=1, IsPhoneVerified=1,IsAdmin = 1 WHERE Id = ?").run(userId);
+        } else {
+            db.prepare('INSERT INTO EmaiVerifications (UserId,CryptoHash) VALUES (?,?)').run(userId,hash);
+            sendVerificationEmail(userId,role,hash,email);
+        }
 
         return userId;
     });

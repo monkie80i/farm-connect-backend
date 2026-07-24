@@ -4,6 +4,8 @@ const SECRET_KEY = process.env.JWT_SECRET;
 const db = require('../db');
 const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
 const { getUserById } = require("../services/user.service");
+const { toCamelCaseObject,formatSQLValue } = require("../utils/utlis");
+
 
 
 const registerUser = (req, res) => {
@@ -59,7 +61,7 @@ const loginUser = (req, res) => {
 
         delete user["PasswordHash"];
 
-        res.status(200).json({ message: "success", data: user , token: token });
+        res.status(200).json({ message: "success", data: toCamelCaseObject(user) , token: token });
       } else {
         res.status(401).json({ message: "Login Failed", data: null });
       }

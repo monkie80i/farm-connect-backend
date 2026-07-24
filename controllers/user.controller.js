@@ -419,7 +419,10 @@ const searchUsers = (req,res) => {
     const {
       username,
       email,
-      role
+      role,
+      isVerificationFilled,
+      isAdminVerified,
+      isAdmin
     } =req.query;
 
     const whereConditions = [];
@@ -440,16 +443,35 @@ const searchUsers = (req,res) => {
       params.push(role);
     }
 
+    if(isVerificationFilled) {
+      whereConditions.push("IsVerificationFilled = ?");
+      params.push(isVerificationFilled);
+    }
+
+    if(isAdminVerified) {
+      whereConditions.push("IsAdminVerified = ?");
+      params.push(isAdminVerified);
+    }
+
+     if(isAdmin) {
+      whereConditions.push("IsAdmin = ?");
+      params.push(isAdmin);
+    }
+
     params.push(pageSize);
     params.push(offset);
 
     const whereClause = whereConditions.length > 0 ? `WHERE ` + whereConditions.join(' AND '): "";
-    
+    console.log(`SELECT * FROM Users LEFT JOIN UserProfile ${whereClause} LIMIT ? OFFSET ?;`)
     const stmnt = db.prepare(`
-      SELECT * FROM Users LEFT JOIN UserProfile ${whereClause} LIMIT ? OFFSET ?;
+      SELECT * FROM Users as u LEFT JOIN UserProfile as p ON p.UserId = u.Id ${whereClause} LIMIT ? OFFSET ?;
     `);
     console.log(stmnt)
     const result = stmnt.all(...params);
+
+    /*
+    SELECT u.Id,p.Id FROM Users as u LEFT JOIN UserProfile as p ON p.UserId = u.Id WHERE IsVerificationFilled = 1 AND IsAdminVerified = 0 AND isAdmin = 0;
+    */
 
     return successResponse(res,toCamelCaseObject(result));
     
