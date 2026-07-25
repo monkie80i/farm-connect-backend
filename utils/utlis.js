@@ -136,6 +136,12 @@ function getFutureDateISO(inputDate = null, days = 5, fullISO = false) {
     return utcDate.toISOString().split("T")[0];
 }
 
+
+function capitalizeFirstLetter(str) {
+  if (!str) return str; // Handle empty strings safely
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 module.exports = {
   toCamelCaseObject,
   formatSQLValue,
@@ -145,5 +151,6 @@ module.exports = {
   getTodayDate,
   daysBetween,
   convertToAcre,
-  getFutureDateISO
+  getFutureDateISO,
+  capitalizeFirstLetter
 };

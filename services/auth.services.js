@@ -49,7 +49,7 @@ const login = (email,password) => {
     const user = db.prepare(`SELECT * FROM Users WHERE Email = ?`).get(email);
     if(user) {
         const matches = bcrypt.compareSync(password,user.PasswordHash);
-        console.log(matches)
+
         if(!matches) {
             return null;
         }

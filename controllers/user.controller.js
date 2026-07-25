@@ -1,7 +1,7 @@
 const userService = require("../services/user.service");
 const authService = require("../services/auth.services");
 const db = require("../db");
-const { toCamelCaseObject,formatSQLValue } = require("../utils/utlis");
+const { toCamelCaseObject,formatSQLValue,capitalizeFirstLetter } = require("../utils/utlis");
 const utils = require("../utils/utlis");
 const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
 
@@ -101,6 +101,8 @@ const getUserProfileDetails = (req, res) => {
   }
 };
 
+/** 
+ * old 
 const editUserDetails = (req,res) => {
   // tested with postman, working fine
   try {
@@ -147,6 +149,50 @@ const editUserDetails = (req,res) => {
       updateStmnt.run(username, id);
     }
 
+    return successResponse(res);
+  
+  } catch (error) {
+    console.log("editUserDetails", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+*/
+      
+const editUserDetails = (req,res) => {
+  try {
+    const id = Number(req.params.userId);
+    const stmnt = db.prepare(`SELECT * FROM Users WHERE Id = ?`);
+    const user = toCamelCaseObject(stmnt.get(id));
+
+    if(!user) {
+      return notFound(res,"User Not Found!");
+    }
+
+    const allowedFields = [
+      'userName', 'firstName', 'lastName', 'phoneCode', 'phone',
+      'dateOfBirth', 'isAdminVerified', 'isActive', 'isAdmin', 'isBanned',
+    ];
+
+    const querySet = [];
+    const params  = [];
+
+    for (const key of allowedFields) {
+      if (key in req.body) {
+        if(req.body[key] !== null && req.body[key].toString().trim() !== "") {
+          const name = capitalizeFirstLetter(key);
+          querySet.push(`${name} = ?`);
+          params.push(req.body[key]);
+        }
+      }
+    }
+
+    const querySetString = querySet.join(",");
+    const editUserTxn = db.transaction(() => {
+      const query = `UPDATE Users SET ${querySetString} WHERE Id = ?`;
+      db.prepare(query).run(...params,id);
+    });
+
+    editUserTxn();
     return successResponse(res);
   
   } catch (error) {
@@ -456,17 +502,16 @@ const searchUsers = (req,res) => {
     params.push(pageSize);
     params.push(offset);
 
+    const columns = 'Id,UserName,FirstName,LastName,Email,PhoneCode,Phone,Role,CreatedDate,UpdateDate';
     const whereClause = whereConditions.length > 0 ? `WHERE ` + whereConditions.join(' AND '): "";
-    console.log(`SELECT * FROM Users LEFT JOIN UserProfile ${whereClause} LIMIT ? OFFSET ?;`)
-    const stmnt = db.prepare(`
-      SELECT * FROM Users as u LEFT JOIN UserProfile as p ON p.UserId = u.Id ${whereClause} LIMIT ? OFFSET ?;
-    `);
-    console.log(stmnt)
-    const result = stmnt.all(...params);
 
-    /*
-    SELECT u.Id,p.Id FROM Users as u LEFT JOIN UserProfile as p ON p.UserId = u.Id WHERE IsVerificationFilled = 1 AND IsAdminVerified = 0 AND isAdmin = 0;
-    */
+    // console.log(`SELECT * FROM Users LEFT JOIN UserProfile ${whereClause} LIMIT ? OFFSET ?;`)
+    // const stmnt = db.prepare(`
+    //   SELECT * FROM Users as u LEFT JOIN UserProfile as p ON p.UserId = u.Id ${whereClause} LIMIT ? OFFSET ?;
+    // `);
+
+    const stmnt = db.prepare(`SELECT ${columns} FROM Users ${whereClause} LIMIT ? OFFSET ?;`);
+    const result = stmnt.all(...params);
 
     return successResponse(res,toCamelCaseObject(result));
     
@@ -523,43 +568,6 @@ const markOrderAlertRead = (req,res) => {
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
-
-
-/**
- * 
- * CREATE TABLE IF NOT EXISTS Notification (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        Title NVARCHAR(200) NOT NULL,
-        Recipient INTEGER,
-        NotificationType NVARCHAR(20),
-        Message TEXT,
-        EntityType NVARCHAR(100),
-        EntityId INTEGER,
-        ActionUrl TEXT,
-        Priority NVARCHAR(20),
-        IsViewed INTEGER DEFAULT 0,
-        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (Recipient) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (Priority) REFERENCES NotificationPriorityLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (NotificationType) REFERENCES NotificationTypeLov(Code) ON DELETE SET NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS OrderAlert (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        Title NVARCHAR(200) NOT NULL,
-        Recipient INTEGER,
-        NotificationType NVARCHAR(20),
-        OrderId INTEGER,
-        ActionUrl TEXT,
-        Priority NVARCHAR(20),
-        IsViewed INTEGER DEFAULT 0,
-        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (Priority) REFERENCES AlertPriorityLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (NotificationType) REFERENCES NotificationTypeLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE SET NULL
-    );
- */
-
 
 module.exports = {
   editProfileAndIdVerfication,
