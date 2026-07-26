@@ -3,10 +3,8 @@ const jwt = require("jsonwebtoken");
 const SECRET_KEY = process.env.JWT_SECRET;
 const db = require('../db');
 const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
-const { getUserById } = require("../services/user.service");
+const { getUserById,getUserByEmail } = require("../services/user.service");
 const { toCamelCaseObject,formatSQLValue } = require("../utils/utlis");
-
-
 
 const registerUser = (req, res) => {
   try {
@@ -41,7 +39,7 @@ const registerUser = (req, res) => {
 
     return successResponse(res,userId);
   } catch (error) {
-    console.log("user/register", error);
+    console.log("auth/register", error);
     return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 };
@@ -66,7 +64,7 @@ const loginUser = (req, res) => {
       }
 
     } catch (error) {
-      console.log("user/register", error);
+      console.log("auth/register", error);
       return errorResponse(res,"Something went wrong!",500,error.toString());
     }
 };
@@ -81,7 +79,7 @@ const runsql = (req,res) => {
 
     return successResponse(res,result);
   } catch (error) {
-    console.log("user/runsql", error);
+    console.log("auth/runsql", error);
       return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 };
@@ -98,11 +96,45 @@ const verifyEmail = (req,res) => {
     }    
     return successResponse(res);
   } catch (error) {
-    console.log("user/verify-email", error);
-      return errorResponse(res,"Something went wrong!",500,error.toString());
+    console.log("auth/verify-email", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 };
 
+const forgotPassword = (req,res) => {
+  try {
+    const { email } = req.body;
+    const user = getUserByEmail(email);
+
+    if(user) {
+      authService.forgotPassword(user);
+    } else {
+      return notFound(res,"User Not Found");
+    }    
+    return successResponse(res,null,"Password reset link sent to user's email");
+  } catch (error) {
+    console.log("auth/forgot-password", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+}
+
+const passwordReset = (req,res) => {
+  try {
+    const { id,hash,password } = req.body;
+    const user = getUserById(id);
+
+    if(!user) { 
+      return notFound(res,"User Not Found");
+    }
+    
+    authService.resetPassword(id,hash,password);
+    return successResponse(res,null,"Password Reset Successfull!");
+  } catch (error) {
+    console.log("auth/password-reset", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+ 
 module.exports = {
-  registerUser,loginUser,runsql,verifyEmail
+  registerUser,loginUser,runsql,verifyEmail,forgotPassword,passwordReset
 };

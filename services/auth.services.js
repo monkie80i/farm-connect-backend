@@ -31,7 +31,7 @@ const registerUser = (
         const passwordHash = bcrypt.hashSync(password, SALT_ROUNDS);
         const info = stmt.run(username, passwordHash, role, firstName, lastName, email, phoneCode, phone, dateOfBirth);
         const userId = info.lastInsertRowid;
-        const hash = createEmailHash();
+        const hash = createUniqueHash();
 
         if(role === "ADMIN") {
             db.prepare("UPDATE Users SET IsEmailVerified=1, IsPhoneVerified=1,IsAdmin = 1 WHERE Id = ?").run(userId);
@@ -79,7 +79,7 @@ const sendEmail = (emailId,message) => {
     console.log(message)
 };
 
-const createEmailHash = () => {
+const createUniqueHash = () => {
   const crypto = require('crypto');
   const token = crypto.randomBytes(32).toString('hex'); // 64-char hex string
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
@@ -104,6 +104,61 @@ const verifyEmail = (id,hash) => {
     txn();
 }
 
+const sendForgotPassworEmail = (userId,role,hash,userEmail) => {
+    const url = `http://${role.toLowerCase()}.shahzan.com:4200/password-reset?id=${userId}&hash=${hash}`;
+    const message = `
+    ###############################################
+    Farm Connect
+    Reset your password by going to the link below
+
+    ${url}
+
+    Enjoy!!
+    ###############################################
+    `;
+
+    sendEmail(userEmail,message);
+
+};
+
+const forgotPassword = (user) => {
+    const forgotPasswordTxn = db.transaction(() => {
+        const row = db.prepare('SELECT * FROM ResetPasswordTracker WHERE UserId = ?').get(user.id);
+        let hash;
+        if(row) {
+            hash = row.CryptoHash;
+        } else {
+            hash = createUniqueHash();
+            db.prepare('INSERT INTO ResetPasswordTracker (UserId,CryptoHash) VALUES (?,?)').run(user.id,hash);
+        }
+
+        sendForgotPassworEmail(user.id,user.role,hash,user.email);
+    });
+
+    forgotPasswordTxn();
+
+}
+
+const resetPassword = (id,hash,password) => {
+    const resetPwdTxn = db.transaction(() => {
+        const row = db.prepare('SELECT * FROM ResetPasswordTracker WHERE UserId = ?').get(id);
+        if(!row) {
+            throw new Error("Reset Link Expired");
+        }
+
+        if(row.CryptoHash !== hash) {
+            throw new Error("Hash dont match");
+        } else {
+            db.prepare("DELETE FROM ResetPasswordTracker WHERE Id = ?").run(row.Id);
+            const newPasswordHash = bcrypt.hashSync(password, SALT_ROUNDS);
+            db.prepare('UPDATE Users SET PasswordHash = ? WHERE Id = ?').run(newPasswordHash,id)
+        }
+
+    });
+
+    resetPwdTxn();
+}
+
 module.exports = {
     getUserByUsername,
     getUserByUserId,
@@ -111,6 +166,8 @@ module.exports = {
     createRandomUserName,
     checkEmailExists,
     login,
-    verifyEmail
+    verifyEmail,
+    forgotPassword,
+    resetPassword
 };
 

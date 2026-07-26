@@ -127,13 +127,24 @@ const userExists = (userId) => {
   return user.count === 1;
 };
 
+const getUserByEmail = (email) => {
+  const stmnt = db.prepare(`SELECT * FROM Users WHERE Email = ?`);
+  const user = stmnt.get(email);
+  
+  if (!user) {
+    return null;
+  }
+  
+  return toCamelCaseObject(user);
+};
+
 
 
 
 
 module.exports = {
   editProfileAndIdVerification,editProfileAndIdVerfication_v2,
-  getUserById,userExists
+  getUserById,userExists,getUserByEmail
 };
 
 
