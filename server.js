@@ -11,6 +11,7 @@ const farmerRoutes = require("./routes/farmer.routes");
 const buyerRoutes = require("./routes/buyer.routes");
 const supportRoutes = require("./routes/support.routes");
 const adminRoutes = require("./routes/admin.routes");
+const { UPLOAD_DIR } = require("./services/file.services");
 
 
 app.use(cors());
@@ -26,6 +27,7 @@ app.use(baseUrl + "/buyer/",buyerRoutes);
 app.use(baseUrl + "/farmer/",farmerRoutes);
 app.use(baseUrl + "/support", supportRoutes);
 app.use(baseUrl + "/user/",userRoutes);
+app.use(baseUrl + "/uploads", express.static(UPLOAD_DIR));
 
 
 app.listen(PORT,() => {
