@@ -54,6 +54,10 @@ const getUserProfileDetails = (req, res) => {
   // tested with postman, working fine
   try {
     const userId = Number(req.params.userId);
+
+    // // userService.getRelatedName('FarmCropTypes','Farm');
+    // const x = userService.getTableColumns('Farm');
+    // console.log(x)
     
     const user = userService.getUserById(userId);
     if(!user) {
@@ -83,7 +87,7 @@ const getUserProfileDetails = (req, res) => {
         const cropTypeStmnt = db.prepare(
           `SELECT * FROM FarmCropTypes WHERE FarmId = ?`,
         );
-        profileDetails.farms[index].cropTypes = cropTypeStmnt.all(farmId);
+        profileDetails.farms[index].cropTypes = cropTypeStmnt.all(farmId); // vhange to farmCropTypes
       }
     } else if (role === "BUYER") {
       const buyerAdressStmtn = db.prepare(
@@ -101,62 +105,63 @@ const getUserProfileDetails = (req, res) => {
   }
 };
 
-/** 
- * old 
-const editUserDetails = (req,res) => {
-  // tested with postman, working fine
-  try {
-    const { 
-      username,phoneCode,phone,
-    } = req.body;
-    const id = Number(req.params.userId);
+/**new And untested */
 
-    const stmnt = db.prepare(`SELECT * FROM Users WHERE Id = ?`);
-    const user = toCamelCaseObject(stmnt.get(id));
+const editProfileDetails2 = (req,res) => {
+  try {
+    const userId = Number(req.params.userId);
+    const incomingData = req.body;
+    const user = userService.getUserById(userId);
 
     if(!user) {
       return notFound(res,"User Not Found!");
     }
 
-    if(user.userName !== username) {
-      const usernameStmnt = db.prepare(`SELECT 1 FROM Users WHERE Username = ?`);
-      const usernameEsixts = usernameStmnt.get(username);
+    const stmnt = db.prepare(`SELECT * FROM UserProfile WHERE UserId = ?`);
+    const profileDetails = stmnt.get(userId);
 
-      if(usernameEsixts) {
-        return errorResponse(res,"Username already exists!",409);
-      }
+    if(!profileDetails) {
+      return notFound(res,"Profile Not Found!");
     }
 
-    let resetPhoneVerified = false;
+    const updateProfileTxn = db.transaction(() => {
+      userService.clearActions();
 
-    if(!user.phoneCode || !user.phone) {
-      resetPhoneVerified = true;
-    }
+      const {result,nestedFeilds} = userService.patchHelper('UserProfile',incomingData,true);
+      console.log("nestedFeilds",nestedFeilds)
+      nestedFeilds.forEach((field) => {
+        if(field.length > 0) {
+          const tableQr = userService.tableExistsInDb(capitalizeFirstLetter(field));
+          if(tableQr.found) {
+            console.log("calling upsert first",tableQr.tableName,incomingData[field].length,'UserId',userId)
+            userService.upsertDeleteHelper(tableQr.tableName,incomingData[field],'UserId',userId);
+          } else {
+            console.log("table nout found for ", field)
+          }
+          
+        }
+      });
 
-    let updateStmntStr = `UPDATE Users SET Username = ?`;
+      console.log("final")
+      console.log(userService.getActions());
+      throw new Error("__ROLL_BACK__")
+    });
 
-    if(phoneCode !== user.phoneCode || phone !== user.phone) {
-      updateStmntStr += `, PhoneCode = ? , Phone = ? , IsPhoneVerified = ?`
-    }
-
-    updateStmntStr += ` where Id = ?`;
-
-    const updateStmnt = db.prepare(updateStmntStr);
-
-    if(phoneCode !== user.phoneCode || phone !== user.phone) {
-      updateStmnt.run(username,phoneCode,phone, resetPhoneVerified ? 0 : user.isPhoneVerified, id);
-    } else { 
-      updateStmnt.run(username, id);
-    }
-
+    const result = updateProfileTxn();
+    
+    
     return successResponse(res);
-  
+    
   } catch (error) {
-    console.log("editUserDetails", error);
+    console.log("editProfileDetails2", error);
     return errorResponse(res,"Something went wrong!",500,error.toString());
   }
+
+  
 };
-*/
+/**new And untested */
+
+
       
 const editUserDetails = (req,res) => {
   try {
@@ -221,7 +226,7 @@ const editProfileDetails = (req,res) => {
     }
 
     const {
-      id,
+      id, 
       displayPicturePath,
       address,
       city,
@@ -232,8 +237,9 @@ const editProfileDetails = (req,res) => {
       uPIId,
     } = incomingData;
 
-    let query = `
-      BEGIN;
+    // BEGIN;
+    let  query = `
+      
       UPDATE UserProfile SET 
         DisplayPicturePath = ${formatSQLValue(displayPicturePath)}, Address = ${formatSQLValue(address)},
         City = ${formatSQLValue(city)}, State = ${formatSQLValue(state)}, IdProofType = ${formatSQLValue(idProofType)},
@@ -401,7 +407,7 @@ const editProfileDetails = (req,res) => {
     }
 
      // execute the query
-      query = query + `COMMIT;`;
+      // query = query + `COMMIT;`;
       console.log("final query", query);
       db.exec(query);
 
@@ -580,5 +586,6 @@ module.exports = {
   getRecentNotifications,
   markNotificationRead,
   getRecentOrderAlerts,
-  markOrderAlertRead
+  markOrderAlertRead,
+  editProfileDetails2
 };

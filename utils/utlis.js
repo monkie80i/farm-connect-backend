@@ -24,15 +24,24 @@ function toCamelCaseObject(data) {
 
 // Helper function to safely format SQL values
 const formatSQLValue = (value) => {
+  console.log("formatSQL IN ",JSON.parse(JSON.stringify(value)))
+
   if (value === null || value === undefined) {
+    console.log("formatSQL OUT 1",JSON.parse(JSON.stringify(value)))
+
     return "NULL";
   }
   if (typeof value === "string") {
+    console.log("formatSQL OUT 2",JSON.parse(JSON.stringify(value)))
+
     return `'${value.replace(/'/g, "''")}'`; // Escape single quotes
   }
   if (typeof value === "boolean") {
+    console.log("formatSQL OUT 3",JSON.parse(JSON.stringify(value)))
+
     return value ? 1 : 0;
   }
+  console.log("formatSQL OUT",JSON.parse(JSON.stringify(value)))
   return value;
 };
 
@@ -152,5 +161,6 @@ module.exports = {
   daysBetween,
   convertToAcre,
   getFutureDateISO,
-  capitalizeFirstLetter
+  capitalizeFirstLetter,
+  pascalToCamel
 };

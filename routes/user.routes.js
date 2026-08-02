@@ -13,7 +13,8 @@ const {
     getRecentNotifications,
     markNotificationRead,
     getRecentOrderAlerts,
-    markOrderAlertRead
+    markOrderAlertRead,
+    editProfileDetails2
 } = require("../controllers/user.controller");
 
 const {
@@ -44,6 +45,8 @@ router.put("/:userId", editUserDetails ); // tested working
 router.get("/:userId/profile", getUserProfileDetails); // tested working
 
 router.put("/:userId/profile", editProfileDetails ); // tested working
+
+router.put("/v/:userId/profile", editProfileDetails2 ); // tested working
 
 router.get('/:userId/all-negotiations', getAllUserNegotiations);
 

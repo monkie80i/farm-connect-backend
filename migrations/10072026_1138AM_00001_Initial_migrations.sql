@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS UserProfile (
         FOREIGN KEY (IdProofType) REFERENCES IdProofTypesLov(Code) ON DELETE SET NULL
     );
 
-    CREATE TABLE IF NOT EXISTS UserPaymentMethod (
+    -- insertDelete
+    CREATE TABLE IF NOT EXISTS UserPaymentMethod ( 
         Id INTEGER PRIMARY KEY AUTOINCREMENT,
         UserId INTEGER,
         PaymentMethod NVARCHAR(20),
@@ -95,6 +96,7 @@ CREATE TABLE IF NOT EXISTS UserProfile (
         FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL
     );
 
+    -- insertDelete
     CREATE TABLE IF NOT EXISTS FarmCropTypes (
         Id INTEGER PRIMARY KEY AUTOINCREMENT,
         FarmId INTEGER,
