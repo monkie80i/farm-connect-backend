@@ -392,7 +392,7 @@ const recursiveCreate = (tableName,dataArray,relatedTableFieldName,relatedTableF
       .prepare(`INSERT INTO ${tableName} (${columnNames.join(',')}) VALUES (${placeHolders})`)
       .run(...valueList);
 
-    Actions.push(`INSERT INTO ${tableName} (${columnNames.join(',')}) VALUES (${placeHolders}); ${JSON.stringify(valueList)}`);
+    Actions.push(`INSERT INTO ${tableName} (${columnNames.join(',')}) VALUES (${placeHolders}); ${JSON.stringify(valueList)} - ID: ${result.lastInsertRowid}`);
     
     console.log(`${RCId} 9.3 result`,result)
     const realtedValue = JSON.parse(JSON.stringify(result.lastInsertRowid))
@@ -534,7 +534,6 @@ const upsertDeleteHelper = (tableName,dataArray,relatedTableField,relatedTableFi
   const pkKey = pascalToCamel(PK);
   console.log(`${UDHId} 2 pkKey`,pkKey)
 
-
   const incoming = dataArray && Array.isArray(dataArray) ? dataArray : [];
   console.log(`${UDHId} 3 incoming`,incoming.length)
 
@@ -552,34 +551,28 @@ const upsertDeleteHelper = (tableName,dataArray,relatedTableField,relatedTableFi
     return;
   }
 
- 
-
-  console.log(`${UDHId} 4 calling recursiveCreate`,tableName,incoming.length)
-  recursiveCreate(tableName,incoming,relatedTableField,relatedTableFieldValue,'upsertDeleteHelper'); // it will take care of the filtering
-  console.log(`${UDHId} 5 back from recursive create`);
-
-  console.log(`${UDHId} 6 SELECT * FROM ${tableName} WHERE ${relatedTableField} = ?;`,relatedTableFieldValue)
+  console.log(`${UDHId} 4 SELECT * FROM ${tableName} WHERE ${relatedTableField} = ?;`,relatedTableFieldValue)
   const existing = toCamelCaseObject(db
     .prepare(`SELECT * FROM ${tableName} WHERE ${relatedTableField} = ?;`)
     .all(relatedTableFieldValue)
   );
-  console.log(`${UDHId} 7 existing`,existing.length)
+  console.log(`${UDHId} 5 existing`,existing)
   const incomingWithId = incoming.filter((p) => ![undefined, null, 0].includes(p[pkKey]));
-  console.log(`${UDHId} 8 incomingWithId`,incomingWithId.length)
+  console.log(`${UDHId} 6 incomingWithId`,incomingWithId.length)
 
   const incomingIds = incomingWithId.map((item) => item[pkKey]);
-  console.log(`${UDHId} 8.1 incomingIds`,incomingIds)
+  console.log(`${UDHId} 7 incomingIds`,incomingIds)
   const toBeDelIds = existing.filter((p) => !incomingIds.includes(p[pkKey])).map((item) => item[pkKey]);
-  console.log(`${UDHId} 9 toBeDelIds`,toBeDelIds)
+  console.log(`${UDHId} 8 toBeDelIds`,toBeDelIds)
 
   if(toBeDelIds.length > 0) {
-    console.log(`${UDHId} 10 calling bulkDeletehelper:`,tableName,pkKey,toBeDelIds)
+    console.log(`${UDHId} 9 calling bulkDeletehelper:`,tableName,pkKey,toBeDelIds)
     bulkDeletehelper(tableName,pkKey,toBeDelIds);
-    console.log(`${UDHId} 11 back from bulkDeletehelper:`,tableName,pkKey,toBeDelIds)
+    console.log(`${UDHId} 10 back from bulkDeletehelper:`,tableName,pkKey,toBeDelIds)
   }
 
   const tobePatched = incoming.filter((item) => item[pkKey]);
-  console.log(`${UDHId} 12 tobePatched`,tobePatched)
+  console.log(`${UDHId} 11 tobePatched`,tobePatched)
   
   tobePatched.forEach((field) => { // feild is object not names
     console.log(`${UDHId} 12.1 calling patchHelper`,tableName,field)
@@ -607,7 +600,12 @@ const upsertDeleteHelper = (tableName,dataArray,relatedTableField,relatedTableFi
     }
     
   });
-  console.log(`${UDHId} 13 Exit UDH, To`, caller,"Reason: Completed");
+
+  console.log(`${UDHId} 13 calling recursiveCreate`,tableName,incoming.length)
+  recursiveCreate(tableName,incoming,relatedTableField,relatedTableFieldValue,'upsertDeleteHelper'); // it will take care of the filtering
+  console.log(`${UDHId} 14 back from recursive create`);
+
+  console.log(`${UDHId} 15 Exit UDH, To`, caller,"Reason: Completed");
 
 
 };
