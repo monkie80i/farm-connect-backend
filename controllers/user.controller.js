@@ -1,7 +1,7 @@
 const userService = require("../services/user.service");
 const authService = require("../services/auth.services");
 const db = require("../db");
-const { toCamelCaseObject,formatSQLValue,capitalizeFirstLetter } = require("../utils/utlis");
+const { toCamelCaseObject,formatSQLValue,capitalize } = require("../utils/utlis");
 const utils = require("../utils/utlis");
 const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
 
@@ -127,11 +127,11 @@ const editProfileDetails2 = (req,res) => {
     const updateProfileTxn = db.transaction(() => {
       userService.clearActions();
 
-      const {result,nestedFeilds} = userService.patchHelper('UserProfile',incomingData,true);
-      console.log("nestedFeilds",nestedFeilds)
-      nestedFeilds.forEach((field) => {
+      const {result,nestedFields} = userService.patchHelper('UserProfile',incomingData,true);
+      console.log("nestedFields",nestedFields)
+      nestedFields.forEach((field) => {
         if(field.length > 0) {
-          const tableQr = userService.tableExistsInDb(capitalizeFirstLetter(field));
+          const tableQr = userService.tableExists(capitalize(field));
           if(tableQr.found) {
             console.log("calling upsert first",tableQr.tableName,incomingData[field].length,'UserId',userId)
             userService.upsertDeleteHelper(tableQr.tableName,incomingData[field],'UserId',userId);
@@ -184,7 +184,7 @@ const editUserDetails = (req,res) => {
     for (const key of allowedFields) {
       if (key in req.body) {
         if(req.body[key] !== null && req.body[key].toString().trim() !== "") {
-          const name = capitalizeFirstLetter(key);
+          const name = capitalize(key);
           querySet.push(`${name} = ?`);
           params.push(req.body[key]);
         }

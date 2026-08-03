@@ -146,7 +146,10 @@ function getFutureDateISO(inputDate = null, days = 5, fullISO = false) {
 }
 
 
-function capitalizeFirstLetter(str) {
+function capitalize(str) {
+  /**
+   * capitalizes the first letter of str
+   */
   if (!str) return str; // Handle empty strings safely
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -161,6 +164,6 @@ module.exports = {
   daysBetween,
   convertToAcre,
   getFutureDateISO,
-  capitalizeFirstLetter,
+  capitalize,
   pascalToCamel
 };
