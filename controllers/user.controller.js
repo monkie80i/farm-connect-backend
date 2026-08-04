@@ -4,7 +4,11 @@ const db = require("../db");
 const { toCamelCaseObject,formatSQLValue,capitalize } = require("../utils/utlis");
 const utils = require("../utils/utlis");
 const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
+const recursives = require("../services/recursives.V2.services");
 
+const {
+  tableExists,
+} =  require("../services/db.services");
 
 const editProfileAndIdVerfication = (req, res) => {
   // tested working
@@ -105,8 +109,6 @@ const getUserProfileDetails = (req, res) => {
   }
 };
 
-/**new And untested */
-
 const editProfileDetails2 = (req,res) => {
   try {
     const userId = Number(req.params.userId);
@@ -125,16 +127,15 @@ const editProfileDetails2 = (req,res) => {
     }
 
     const updateProfileTxn = db.transaction(() => {
-      userService.clearActions();
+      recursives.clearActions();
 
-      const {result,nestedFields} = userService.patchHelper('UserProfile',incomingData,true);
-      console.log("nestedFields",nestedFields)
+      const {result,nestedFields} = recursives.patchHelperV2('UserProfile',incomingData,null,'EDIT_PROF',1);
+
       nestedFields.forEach((field) => {
         if(field.length > 0) {
-          const tableQr = userService.tableExists(capitalize(field));
+          const tableQr = tableExists(capitalize(field));
           if(tableQr.found) {
-            console.log("calling upsert first",tableQr.tableName,incomingData[field].length,'UserId',userId)
-            userService.upsertDeleteHelper(tableQr.tableName,incomingData[field],'UserId',userId);
+            recursives.upsertDeleteHelperV2(tableQr.tableName,incomingData[field],'UserId',userId,'EDIT_PROF',1);
           } else {
             console.log("table nout found for ", field)
           }
@@ -142,8 +143,7 @@ const editProfileDetails2 = (req,res) => {
         }
       });
 
-      console.log("final")
-      console.log(userService.getActions());
+      console.log(recursives.getActions());
       throw new Error("__ROLL_BACK__")
     });
 

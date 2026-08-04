@@ -1,106 +1,30 @@
 const db = require("../db");
-const fs = require('node:fs')
 const {
   toCamelCaseObject,
   capitalize,
   pascalToCamel,
   formatSQLValue,
+  timeElapsed,
 } = require("../utils/utlis");
-
-
-var DEBUG = true;
-var DEBUG_CONSOLE = true;
-var DEBUG_FILE = false;
-
-const log = (...args) => {
-  if (DEBUG && DEBUG_CONSOLE) console.log(...args);
-  if(DEBUG && DEBUG_FILE) {
-    try {
-      fs.writeFileSync('config.json', JSON.stringify({ status: 'ok' }));
-      console.log('Sync write complete.');
-    } catch (err) {
-      console.error(err);
-    }
-  } 
-  
-};
+const {
+  getRelatedName,
+  getTableColumns,
+  tableExists,
+  bulkDeletehelper
+} =  require("./db.services");
+const { log } = require('./logger.services');
 
 /** Global Variable for tracking Database changes of the recursive functions. 
  * Mainly for debugging 
  * */
 var ACTIONS = [];
 
-/** tableName - Pascal case , primaryKeyName - Pascal case , primaryKeyValue - Any. */
-const deleteHelper = (tableName, primaryKeyName, primaryKeyValue) => {
-  db.prepare(
-    `DELETE FROM ${tableName} WHERE ${capitalize(primaryKeyName)} = ?`,
-  ).run(primaryKeyValue);
+const clearActions = () => {
+  ACTIONS = [];
 };
 
-/** Get Foreign key refences from othere tables to 'target' table. */
-const getForeignKeyToTable = (target) => {
-  const result = db
-    .prepare(
-      `
-    SELECT name FROM sqlite_schema WHERE type = 'table' AND sql LIKE '%REFERENCES ?%';
-  `,
-    )
-    .run(target);
-  return result;
-};
-
-/**
-   * Gets the name of the Foreing key from sourceTable to targetTable.
-   * sourceTable - Pascal Case, targetTable - Pascal Case.
-   */
-const getRelatedName = (sourceTable, targetTable) => {
-  console.log(" get related name", sourceTable, targetTable);
-  const result = db
-    .prepare(`PRAGMA foreign_key_list('${sourceTable}')`)
-    .all()
-    .find((p) => p.table === targetTable);
-  return result && result["from"] ? result["from"] : null;
-};
-
-/** Gets the list of columns of table. */
-const getTableColumns = (tableName) => {
-  return db.prepare(`pragma table_info(${tableName})`).all();
-};
-
-/** Gets boolean for whether the table exists or not. */
-const tableExistsQurey = (tableName) => {
-  const stmnt = db
-    .prepare(`SELECT COUNT(*) from sqlite_master WHERE name = ?`)
-    .get(tableName);
-  const value = stmnt["COUNT(*)"];
-  return value;
-};
-
-/** Checks if the table exists but with different possiblities of the name in singular and plural
-   * returns { found: boolean, tableName: string (actual table name ) }
-   */
-const tableExists = (tableName) => {
-  
-  let value = tableExistsQurey(tableName);
-
-  if (value === 0) {
-    const lowerTableName = tableName.toLowerCase();
-
-    const newTableName = lowerTableName.endsWith("es")
-      ? tableName.slice(0, -2)
-      : lowerTableName.endsWith("s")
-        ? tableName.slice(0, -1)
-        : tableName + "s";
-
-    value = tableExistsQurey(newTableName);
-
-    if (value === 1) {
-      return {
-        found: true,
-        tableName: newTableName,
-      };
-    }
-  }
+const getActions = () => {
+  return JSON.parse(JSON.stringify(ACTIONS));
 };
 
 
@@ -586,154 +510,9 @@ const insertOrDeleteHelper = (
   }
 };
 
-/** Bulk Delete by column values */
-const bulkDeletehelper = (tableName, primaryKey, valueList) => {
-  db.prepare(
-    `DELETE FROM ${tableName} WHERE ${primaryKey} IN (${valueList.join(",")})`,
-  ).run();
-
-  ACTIONS.push(
-    `DELETE FROM ${tableName} WHERE ${primaryKey} IN (${valueList.join(",")})`,
-  );
-};
-
-const clearActions = () => {
-  Actions = [];
-};
-
-const getActions = () => {
-  return JSON.parse(JSON.stringify(Actions));
-};
 
 
-/**
- *  Versions 2s
- */
 
-/**
- * Patches an object, returns new created object and nested fields that were in the object
- * 
- * Inputs::
- * tableName : PascalCase
- * data : object corresponding to table in tableName
- * hasUpdateTimesStamp : boolean
- * updateUser : number ! null
- *
- * Outputs::
- * None
- */
-const patchHelperV2 = (
-  tableName,
-  data,
-  updateUser = null,
-  caller = null,
-) => {
-
-  let PHId = `PH/${tableName}/${caller || 'direct'}: `;
-  if (caller) {
-    PHId = "    " + PHId;
-    if (caller === "patchHelper") {
-      PHId = "    " + PHId;
-    }
-  }
-
-  const tableExists = this.tableExists(tableName);
-
-  if(!tableExists.found) {
-    throw new Error(`${PHId}: Table name does not exist.`);
-  }
-  const newTableName = tableExists.tableName;
-
-  console.log(`Enter PH, from `, caller, "Code", PHId);
-
-  if(data  === null || typeof(data) !== 'object') {
-    throw new Error(`- ${PHId}: Input Data is invalid.`);
-  }
-
-  const TABLE_COLUMNS = getTableColumns(newTableName);
-  const pkColumn = TABLE_COLUMNS.find((p) => p.pk === 1); // pk - Pascal case
-
-  if(!pkColumn) {
-    throw new Error(`- ${PHId}: Table ${newTableName} has no Primary Key Field. `);
-  }
-
-  const pk = pkColumn.name;
-
-  console.log(`${PHId} 1 pk`, pk);
-  const excludeColumns = [
-    "CreatedUser",
-    "UpdatedUser",
-    "CreatedDate",
-    "UpdatedDate",
-  ];
-
-  const tableColumns = new Set(
-    // Pascal Case
-    TABLE_COLUMNS.map((p) => p.name).filter((p) => !excludeColumns.includes(p)),
-  );
-  console.log(`${PHId} 2 tableColumns`, tableColumns);
-
-  const tableHasUpdateDateColumn = TABLE_COLUMNS.some((p) => p.name === "UpdatedDate");
-
-  console.log(`${PHId} 3 newTableName tableHasUpdateDateColumn `, tableHasUpdateDateColumn);
-
-  const updatableFieldsInData = Object.keys(data)
-    .filter((p) => p !== pascalToCamel(pk)) // good // camel case
-    .filter((p) => tableColumns.includes(capitalize(p))); // camelCase
-  console.log(`${PHId} 4 updatableFieldsInData`, updatableFieldsInData);
-
-  const directUpdatableFields = updatableFieldsInData.filter(
-    (fieldName) => !Array.isArray(data[fieldName]),
-  ); // camelCase
-  console.log(`${PHId} 5 directUpdatableFields`, directUpdatableFields);
-
-  // camelCase []
-  const nestedFields = Object.keys(data)
-    .filter((p) => p !== pascalToCamel(pk))
-    .filter((p) => !updatableFieldsInData.includes(p))
-    .filter((p) => Array.isArray(data[p])); 
-
-  const unusedFields = Object.keys(data)
-    .filter((p) => !updatableFieldsInData.includes(p))
-    .filter((p) => !Array.isArray(data[p])); 
-
-  if(directUpdatableFields.length === 0) {
-    console.log(`${PHId} 5.1 Exit PH, To`, caller, "Reason: No Fields to be updated");
-    return { result: null, nestedFields, pk };
-  }
-
-  let setParts = [];
-  let valueList = [];
-
-  for (const field of updatableFieldsInData) {
-    setParts.push(`${capitalize(p)} = ?`);
-    valueList.push(data[field]);
-  }
-
-  if (tableHasUpdateDateColumn) {
-    setParts.push('UpdatedDate = CURRENT_TIMESTAMP');
-  }
-
-  if(updateUser) {
-    setParts.push('UpdateUser = ?');
-    valueList.push(updateUser);
-  }
-
-  // "WHERE" parameter
-  valueList.push(data[pascalToCamel(pk)]); 
-
-  const setStr = setParts.join(', ');
-  const sql = `UPDATE ${newTableName} SET ${setStr} WHERE ${pk} = ?`;
-
-  console.log(`${PHId} 8 ${sql}`);
-  console.log(`${PHId} 9 valueList`, ...valueList);
-  const result = db.prepare(sql).run(...valueList);
-
-  ACTIONS.push(`${sql} : ${JSON.stringify(valueList)}`);
-
-  console.log(`${PHId} 10 Exit PH, To`, caller, "Reason: Completed");
-  return { result, nestedFields, pk, unusedFields };
-};
 
 
 module.exports = {
@@ -742,16 +521,5 @@ module.exports = {
   patchHelper,
   upsertDeleteHelper,
   tableExists,
-  clearActions,
-  getActions,
+  
 };
-
-/**
- * NOTES:
- *
- * 1. If you are sending a field then it better have values, if its null
- * also in incoming upser delte patch, rather than checking the fields on the input request, it should aso check with the tables itsefl, for taht related column
- *
- * 2. If empty [] is send the exsisting ones are delted. If nothing sent, no changes.
- *
- */

@@ -154,6 +154,24 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+/**
+ * time 1 and time 2 are expected Date()
+ */
+const timeElapsed = (time1,time2) => {
+  if(!(time1 instanceof Date && time2 instanceof Date)) {
+    throw new Error('time1 and time2 should be Date objects.');    
+  }
+  // Get absolute difference in milliseconds
+  const diffInMs = Math.abs(time2 - time1);
+
+  // Convert to various time units
+  const diffInSecs = Math.floor(diffInMs / 1000);
+  const diffInMins = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+
+  return `${diffInHours}:${diffInMins % 60}:${diffInSecs}`; 
+};
+
 module.exports = {
   toCamelCaseObject,
   formatSQLValue,
@@ -165,5 +183,6 @@ module.exports = {
   convertToAcre,
   getFutureDateISO,
   capitalize,
-  pascalToCamel
+  pascalToCamel,
+  timeElapsed,
 };
