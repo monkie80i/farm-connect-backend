@@ -44,6 +44,7 @@ const getUserDetails = (req, res) => {
     console.log("User details retrieved:", user);
     if (user) {
       const data = utils.toCamelCaseObject(user);
+      delete data["passwordHash"]
       return successResponse(res,data);
     } else {
       return notFound(res);
@@ -109,7 +110,8 @@ const getUserProfileDetails = (req, res) => {
   }
 };
 
-const editProfileDetails2 = (req,res) => {
+// teted working
+const patchProfileDetails = (req,res) => {
   try {
     const userId = Number(req.params.userId);
     const incomingData = req.body;
@@ -128,14 +130,13 @@ const editProfileDetails2 = (req,res) => {
 
     const updateProfileTxn = db.transaction(() => {
       recursives.clearActions();
-
-      const {result,nestedFields} = recursives.patchHelperV2('UserProfile',incomingData,null,'EDIT_PROF',1);
+      const {result,nestedFields} = recursives.patchHelperV2('UserProfile',incomingData,null,'PATCH_PROF',1);
 
       nestedFields.forEach((field) => {
         if(field.length > 0) {
           const tableQr = tableExists(capitalize(field));
           if(tableQr.found) {
-            recursives.upsertDeleteHelperV2(tableQr.tableName,incomingData[field],'UserId',userId,'EDIT_PROF',1);
+            recursives.upsertDeleteHelperV2(tableQr.tableName,incomingData[field],'UserId',userId,'PATCH_PROF',1);
           } else {
             console.log("table nout found for ", field)
           }
@@ -144,25 +145,20 @@ const editProfileDetails2 = (req,res) => {
       });
 
       console.log(recursives.getActions());
-      throw new Error("__ROLL_BACK__")
+      // throw new Error("__ROLL_BACK__");
     });
 
     const result = updateProfileTxn();
-    
-    
     return successResponse(res);
     
   } catch (error) {
-    console.log("editProfileDetails2", error);
+    console.log("patchProfileDetails", error);
     return errorResponse(res,"Something went wrong!",500,error.toString());
   }
 
   
 };
-/**new And untested */
-
-
-      
+    
 const editUserDetails = (req,res) => {
   try {
     const id = Number(req.params.userId);
@@ -587,5 +583,5 @@ module.exports = {
   markNotificationRead,
   getRecentOrderAlerts,
   markOrderAlertRead,
-  editProfileDetails2
+  patchProfileDetails
 };
