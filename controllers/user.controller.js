@@ -27,9 +27,6 @@ const editProfileAndIdVerfication = (req, res) => {
       return notFound(res,"User Not Found!");
     }
   } catch (error) {
-    if (error.message !== '__ROLLBACK__') {
-      return successResponse(res);
-    }; 
     console.log("user/:id", error);
     return errorResponse(res,"Something went wrong!",500,error.toString());
   }

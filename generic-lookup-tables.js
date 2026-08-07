@@ -20,8 +20,9 @@ const LOVs = [
     "NotificationTypeLov",
     "NotificationPriorityLov",
     "ReportGenerationStatusLov",
-    "ReportGenerationStatusLov"
-
+    "ReportGenerationStatusLov",
+    "SeasonLOV",
+    "RegionLov"
 ];
 
 module.exports = LOVs;

@@ -82,14 +82,15 @@ const editProfileAndIdVerfication_v2 = (userId, profileData) => {
     // landProofPath,
     idProofType,
     idProofPath,
+    idProofFileName,
     paymentMethods,
     upiId,
   } = profileData;
 
   const txn = db.transaction(() => {
     db.prepare(
-      `INSERT INTO UserProfile (UserId,Address,City,State,IdProofType,IdProofpath,UPIId) VALUES (?,?,?,?,?,?,?)`,
-    ).run(userId, address, city, state, idProofType, idProofPath, upiId);
+      `INSERT INTO UserProfile (UserId,Address,City,State,IdProofType,IdProofpath,IdProofFileName,UPIId) VALUES (?,?,?,?,?,?,?,?)`,
+    ).run(userId, address, city, state, idProofType, idProofPath,idProofFileName, upiId);
 
     paymentMethods?.forEach((method) => {
       db.prepare(

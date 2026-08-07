@@ -162,23 +162,42 @@ function displayMigrationStatus() {
 
 function runNormalMigrations() {
   createMigrationsTable();
-  const {files,executed,pending} = getMigrationStatus();
+  const { pending } = getMigrationStatus();
+  let failed = null;
 
-  if(pending.length < 1) {
+  if (pending.length < 1) {
     console.log("Migrations Upto date.");
     return;
   }
 
-  for (const file of pending) {
-    console.log(`Running migration: ${file}`);
-    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+  console.log(`Running ${pending.length} migrations...`);
+  db.pragma("foreign_keys = OFF");
 
-    db.exec(sql);
-    db.prepare(`INSERT INTO migrations (name) VALUES (?)`).run(file);
+  try {
+    for (const [index,file] of pending.entries()) {
+      try {
+        const start = Date.now();
+        const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
+
+        db.transaction(() => {
+          db.exec(sql);
+          db.prepare(`INSERT INTO migrations (name) VALUES (?)`).run(file);
+        })();
+
+        console.log(`\t ✓ [${index + 1}/${pending.length}] ${file} (${Date.now() - start} ms)`);
+      } catch (error) {
+        failed = { file, error };
+        break;
+      }
+    }
+  } finally {
+    db.pragma("foreign_keys = ON");
   }
 
-  console.log('Migrations complete for the following files');
-  pending.forEach( (file,index) => {console.log(`\t${index+1}. ${file}`)});
+  if (failed) {
+    console.log(`\t ✗ 1. ${failed.file}`);
+    console.log(`\t\t${failed.error.stack ?? failed.error.message} \n${"#".repeat(100)}`);
+  }
   return;
 }
 // Normal migrations end here
