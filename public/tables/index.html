@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Connect - Tables</title>
+    <link rel="stylesheet" href="/tables/tables.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">Farm Connect</div>
+        <div class="page-title">Database Tables</div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <section class="nav-section">
+                <button type="button" class="nav-heading" data-section-toggle="main">
+                    <span>Main Tables</span>
+                    <span class="nav-chevron" aria-hidden="true">▾</span>
+                </button>
+                <div id="mainTables" class="table-list"></div>
+            </section>
+
+            <section class="nav-section">
+                <button type="button" class="nav-heading" data-section-toggle="lookup">
+                    <span>Generic Lookup Tables</span>
+                    <span class="nav-chevron" aria-hidden="true">▾</span>
+                </button>
+                <div id="lookupTables" class="table-list"></div>
+            </section>
+        </aside>
+
+        <main id="content" class="content">
+            <div class="empty-state">
+                <h2>Select a table</h2>
+                <p>Choose a table from the left to view its structure.</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="/tables/tables.js"></script>
+</body>
+</html>

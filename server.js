@@ -11,6 +11,8 @@ const farmerRoutes = require("./routes/farmer.routes");
 const buyerRoutes = require("./routes/buyer.routes");
 const supportRoutes = require("./routes/support.routes");
 const adminRoutes = require("./routes/admin.routes");
+const tablesRoutes = require("./routes/tables.routes");
+
 const { UPLOAD_DIR } = require("./services/file.services");
 
 
@@ -21,13 +23,19 @@ app.get("/", (req,res)=>{
     res.status(200).sendFile(path.join(__dirname,'public','index.html'));
 });
 
+app.get("/tables", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "tables", "index.html"));
+});
+
 app.use(baseUrl + "/admin/",adminRoutes); 
 app.use(baseUrl + "/auth/",authRoutes);
 app.use(baseUrl + "/buyer/",buyerRoutes);   
 app.use(baseUrl + "/farmer/",farmerRoutes);
 app.use(baseUrl + "/support", supportRoutes);
 app.use(baseUrl + "/user/",userRoutes);
+app.use(baseUrl + "/tables/", tablesRoutes);
 app.use(baseUrl + "/uploads", express.static(UPLOAD_DIR));
+app.use("/tables", express.static(path.join(__dirname, "public", "tables")));
 
 
 app.listen(PORT,() => {

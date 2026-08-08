@@ -22,7 +22,8 @@ const LOVs = [
     "ReportGenerationStatusLov",
     "ReportGenerationStatusLov",
     "SeasonLOV",
-    "RegionLov"
+    "RegionLov",
+    "GrowthDurationLov"
 ];
 
 module.exports = LOVs;
