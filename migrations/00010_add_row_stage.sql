@@ -1,0 +1,1 @@
+INSERT INTO CropStagesLov (Code,Description) VALUES ('DORM','Dormancy');

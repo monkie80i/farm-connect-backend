@@ -5,6 +5,7 @@ const {
   getTodayDate,
   convertToAcre,
   formatSQLValue,
+  capitalize
 } = require("../utils/utlis");
 const {
   successResponse,
@@ -16,6 +17,14 @@ const {
   calculateYieldEstimation,
   computeYieldFactors,
 } = require("../services/yeild-est.services");
+
+const ALLOWED_PHASE_TYPES = ["FULL", "ESTABLISHMENT", "RECURRING"];
+const FIELD_TO_COLUMN = {
+  minDaysFromPreviousStage: "MinDaysFromPreviousStage",
+  maxDaysFromPreviousStage: "MaxDaysFromPreviousStage",
+};
+
+
 
 const getFarmerCrops = (req, res) => {
   // tested working
@@ -578,15 +587,243 @@ const deleteCropVarieity = (req, res) => {
   }
 };
 
-const getCropLifeCycleDefenitions = (req, res) => {
+const searchCropLifeCycleDefenitions = (req, res) => {
   try {
-    // const result = db.prepare(`SELECT * FROM CropLifecycleDefinition;`).all();
+    
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
 
-    const result = db.prepare(`SELECT * FROM CropStagesLov;`).all();
+    const allowedFields = [ 
+      'cropTypeId', 'cropVarietyId', 'region', 'season', 'phaseType'
+    ];
 
-    return successResponse(res, toCamelCaseObject(result));
+    const whereCondtions = [];
+    const params  = [];
+
+    for (const key of allowedFields) {
+      if (key in req.query) {
+        if(req.query[key] !== null && req.query[key].toString().trim() !== "") {
+          const name = capitalize(key);
+          console.log('name',name)
+          whereCondtions.push(`DEF.${name}=?`);
+          params.push(req.query[key]);
+        }
+      }
+    }
+
+    const whereClause = whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}`: "";
+
+    const  txn = db.transaction(() => {
+      const start = new Date();
+      // const stmnt = `SELECT * FROM CropLifecycleDefinition ${whereClause} LIMIT ? OFFSET ?`;
+
+      const stmnt = `SELECT
+        DEF.Id,
+        DEF.CropTypeId,
+        CT.CropName as CropTypeName,
+        DEF.CropVarietyId,
+        VAR.VarietyName,
+        DEF.Season,
+        S.Description as SeasonDescription,
+        DEF.Region,
+        REG.Description as RegionDescription,
+        DEF.PhaseType,
+        DEF.CreatedUser,
+        DEF.UpdatedUser,
+        DEF.CreatedDate,
+        DEF.UpdatedDate
+      FROM CropLifecycleDefinition DEF
+      INNER JOIN CropType CT ON DEF.CropTypeId = CT.Id 
+      INNER JOIN CropVariety VAR ON DEF.CropVarietyId = VAR.Id 
+      INNER JOIN RegionLov REG ON DEF.Region = REG.Code 
+      INNER JOIN SeasonLov S ON DEF.Season = S.Code ${whereClause} LIMIT ? OFFSET ?`;
+
+      const result = db.prepare(stmnt).all(...params,pageSize, offset);
+
+      result.forEach(def => {
+        const stageStmtn = `SELECT * FROM CropLifeCycleStages WHERE CropLifecycleDefinitionId = ${def.Id} ORDER BY StageOrder ASC`;
+        const stages = db.prepare(stageStmtn).all();
+        def["cropLifeCycleStages"] = stages;
+      });
+
+      // Get total count for pagination
+      const countStmnt = db.prepare(
+        `SELECT COUNT(DISTINCT Id) as total 
+        FROM CropLifecycleDefinition DEF
+        ${whereClause}`,
+      );
+      const { total } = countStmnt.get(...params);
+      console.log(`time elapsed with join (${Date.now() - start} ms)`)
+      return {
+        data: toCamelCaseObject(result),
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      }
+
+    });
+
+    const txnResult = txn();
+
+    return successResponse(res, txnResult);
   } catch (error) {
-    console.log("getCropLifeCycleDefenitions", error);
+    console.log("searchCropLifeCycleDefenitions", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+function validateDefinition(def, index) {
+  const prefix = `definitions[${index}]`;
+  if (!def || typeof def !== "object") return `${prefix} must be an object`;
+  if (!Number.isInteger(def.cropTypeId)) return `${prefix}.cropTypeId is required`;
+  if (!Number.isInteger(def.cropVarietyId)) return `${prefix}.cropVarietyId is required`;
+  if (!ALLOWED_PHASE_TYPES.includes(def.phaseType))
+    return `${prefix}.phaseType must be one of ${ALLOWED_PHASE_TYPES.join(", ")}`;
+  if (!Array.isArray(def.stages) || def.stages.length === 0)
+    return `${prefix}.stages must be a non-empty array`;
+
+  for (const [i, stage] of def.stages.entries()) {
+    const stagePrefix = `${prefix}.stages[${i}]`;
+    if (!stage.stage || typeof stage.stage !== "string")
+      return `${stagePrefix}.stage is required`;
+    if (!Number.isInteger(stage.minDaysFromPreviousStage) || stage.minDaysFromPreviousStage < 0)
+      return `${stagePrefix}.minDaysFromPreviousStage must be a non-negative integer`;
+    if (!Number.isInteger(stage.maxDaysFromPreviousStage) || stage.maxDaysFromPreviousStage < 0)
+      return `${stagePrefix}.maxDaysFromPreviousStage must be a non-negative integer`;
+    if (stage.maxDaysFromPreviousStage < stage.minDaysFromPreviousStage)
+      return `${stagePrefix}.maxDaysFromPreviousStage must be >= minDaysFromPreviousStage`;
+  }
+  return null;
+}
+
+const bulkCreateCropLifeCycleDefenition = (req, res) => {
+  try {
+    const { createdUser, definitions } = req.body;
+
+    if (!Array.isArray(definitions) || definitions.length === 0) {
+      return errorResponse(res, "definitions must be a non-empty array", 400);
+    }
+
+    for (const [index, def] of definitions.entries()) {
+      const validationError = validateDefinition(def, index);
+      if (validationError) {
+        return errorResponse(res, validationError, 400);
+      }
+    }
+
+    console.log("here");
+    
+    const insertDefinitionStmt = db.prepare(`
+      INSERT INTO CropLifecycleDefinition
+        (CropTypeId, CropVarietyId, Region, Season, PhaseType, CreatedUser)
+      VALUES (@cropTypeId, @cropVarietyId, @region, @season, @phaseType, @createdUser)
+    `);
+
+    console.log("here not");
+
+
+    const insertStageStmt = db.prepare(`
+      INSERT INTO CropLifeCycleStages
+        (CropLifecycleDefinitionId, Stage, StageOrder, MinDaysFromPreviousStage, MaxDaysFromPreviousStage)
+      VALUES (@cropLifecycleDefinitionId, @stage, @stageOrder, @minDaysFromPreviousStage, @maxDaysFromPreviousStage)
+    `);
+
+    // Transaction: all definitions + all their stages succeed together, or none are written.
+    const insertAll = db.transaction((defs) => {
+      console.log("enter transaction")
+      return defs.map((def) => {
+        const result = insertDefinitionStmt.run({
+          cropTypeId: def.cropTypeId,
+          cropVarietyId: def.cropVarietyId,
+          region: def.region ?? null,
+          season: def.season ?? null,
+          phaseType: def.phaseType,
+          createdUser: createdUser ?? null,
+        });
+
+        const definitionId = result.lastInsertRowid;
+
+        def.stages.forEach((stage, i) => {
+          insertStageStmt.run({
+            cropLifecycleDefinitionId: definitionId,
+            stage: stage.stage,
+            stageOrder: stage.stageOrder ?? i + 1,
+            minDaysFromPreviousStage: stage.minDaysFromPreviousStage,
+            maxDaysFromPreviousStage: stage.maxDaysFromPreviousStage,
+          });
+        });
+
+        return { id: definitionId, ...def };
+      });
+    });
+
+    const created = insertAll(definitions);
+
+    return successResponse(res, toCamelCaseObject(created));
+  } catch (error) {
+    console.log("createCropLifeCycleDefenition", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const bulkUpdateCropLifeCycleStageDays = (req, res) => {
+  try {
+    const { definitionIds, stage, field, delta, updatedUser } = req.body;
+
+    if (!Array.isArray(definitionIds) || definitionIds.length === 0) {
+      return errorResponse(res, "definitionIds must be a non-empty array", 400);
+    }
+    if (!definitionIds.every((id) => Number.isInteger(id))) {
+      return errorResponse(res, "definitionIds must all be integers", 400);
+    }
+    if (!stage || typeof stage !== "string") {
+      return errorResponse(res, "stage is required", 400);
+    }
+    const column = FIELD_TO_COLUMN[field];
+    if (!column) {
+      return errorResponse(
+        res,
+        `field must be one of ${Object.keys(FIELD_TO_COLUMN).join(", ")}`,
+        400,
+      );
+    }
+    if (!Number.isInteger(delta)) {
+      return errorResponse(res, "delta must be an integer", 400);
+    }
+
+    // column name is whitelisted above via FIELD_TO_COLUMN, so this is safe to interpolate
+    const updateStmt = db.prepare(`
+      UPDATE CropLifeCycleStages
+      SET ${column} = MAX(0, ${column} + @delta),
+          UpdatedDate = CURRENT_TIMESTAMP,
+          UpdatedUser = @updatedUser
+      WHERE CropLifecycleDefinitionId = @definitionId
+        AND Stage = @stage
+    `);
+
+    const applyBulkUpdate = db.transaction((ids) => {
+      let affected = 0;
+      for (const definitionId of ids) {
+        const result = updateStmt.run({
+          definitionId,
+          stage,
+          delta,
+          updatedUser: updatedUser ?? null,
+        });
+        affected += result.changes;
+      }
+      return affected;
+    });
+
+    const affected = applyBulkUpdate(definitionIds);
+
+    return successResponse(res, { affected });
+  } catch (error) {
+    console.log("bulkUpdateCropLifeCycleStageDays", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
@@ -782,9 +1019,12 @@ module.exports = {
   createCropVarieities,
   getCropVarieity,
   deleteCropVarieity,
-  getCropLifeCycleDefenitions,
+  searchCropLifeCycleDefenitions,
   createCropLifeCycleDefenition,
   getCropLifeCycleDefenitionDetails,
   deleteCropLifeCycleStage,
   defaultStages,
+  bulkCreateCropLifeCycleDefenition,
+  bulkUpdateCropLifeCycleStageDays,
+
 };

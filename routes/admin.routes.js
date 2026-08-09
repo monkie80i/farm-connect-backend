@@ -11,11 +11,13 @@ const {
     createCropVarieities,
     getCropVarieity,
     deleteCropVarieity,
-    getCropLifeCycleDefenitions,
+    searchCropLifeCycleDefenitions,
     createCropLifeCycleDefenition,
     getCropLifeCycleDefenitionDetails,
     deleteCropLifeCycleStage,
-    defaultStages
+    defaultStages,
+    bulkCreateCropLifeCycleDefenition,
+    bulkUpdateCropLifeCycleStageDays
 } = require("../controllers/crop.controller");
 
 
@@ -43,9 +45,13 @@ router.put("/crop-variety/:cropVarietyId", (req, res) => {}); // later
 
 router.delete("/crop-variety/:cropVarietyId", deleteCropVarieity); // tested working
 
-router.get("/crop-lifecycle-defenitions", getCropLifeCycleDefenitions); // tested working
+router.get("/crop-lifecycle-defenitions", searchCropLifeCycleDefenitions);
 
 router.post("/crop-lifecycle-defenitions", createCropLifeCycleDefenition); // tested working
+
+router.post("/crop-lifecycle-defenitions/bulk", bulkCreateCropLifeCycleDefenition); 
+
+router.put("/crop-lifecycle-defenitions/bulk-stage-days", bulkUpdateCropLifeCycleStageDays);
 
 router.get("/crop-lifecycle-defenition/:cropLifecycleDefId", getCropLifeCycleDefenitionDetails);
 

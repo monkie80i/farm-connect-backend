@@ -1,84 +1,67 @@
-Admin Master Data 
+Admin Master Data:
+
+1. CropStagesLov,GrowthDurationLov:
+- Code NVARCHAR(10), PRIMARY KEY.
+- Description TEXT, NOT NULL.
+
+2. CropType
+- Id: INTEGER ,PRIMARY KEY,AUTOINCREMENT,
+- CropName:  NVARCHAR(50),NOT NULL,UNIQUE COLLATE NOCASE,
+- ScientificName: NVARCHAR(100),
+- GrowthDurationType: NVARCHAR(10),NOT NULL, DEFAULT 'ANNUAL', FK TO GrowthDurationLov(Code).
+- IsActive: INTEGER DEFAULT 1,
+- CreatedUser: INTEGER, FK to Users(Id),
+- UpdatedUser: INTEGER, FK to Users(Id),
+- CreatedDate: DATETIME,
+- UpdatedDate: DATETIME,
+
+3. CropVariety
+- Id: INTEGER PRIMARY KEY AUTOINCREMENT,
+- CropTypeId: INTEGER NOT NULL,CropType(Id).
+- VarietyName: NVARCHAR(50) NOT NULL,
+- MaturityMinDays: INTEGER NOT NULL,
+- MaturityMaxDays: INTEGER NOT NULL,
+- YieldPerAcre: FLOAT NOT NULL,
+- ShelfLifeDays: INTEGER,
+- IsHybrid: INTEGER DEFAULT 0,
+- Notes: TEXT,
+- IsActive: INTEGER DEFAULT 1,
+- CreatedUser: INTEGER, FK to Users(Id),
+- UpdatedUser: INTEGER, FK to Users(Id),
+- CreatedDate: DATETIME DEFAULT CURRENT_TIMESTAMP,
+- UpdatedDate: DATETIME,
+
+4. CropLifecycleDefinition:
+- Id: INTEGER PRIMARY KEY AUTOINCREMENT,
+- CropTypeId: INTEGER NOT NULL, FK to CropType(Id).
+- CropVarietyId: INTEGER NOT NULL, FK to CropVariety(Id).
+- Season: NVARCHAR(10), FK to SeasonLov(Code).
+- Region: NVARCHAR(10), FK to RegionLov(Code).
+- PhaseType: NVARCHAR(15) DEFAULT 'FULL' CHECK (PhaseType IN ('FULL','ESTABLISHMENT','RECURRING')) NOT NULL, -- new
+- CreatedUser: INTEGER, FK to Users(Id),
+- UpdatedUser: INTEGER, FK to Users(Id),
+- CreatedDate: DATETIME DEFAULT CURRENT_TIMESTAMP,
+- UpdatedDate: DATETIME,
 
 
+CropLifeCycleStages:
+- Id: INTEGER PRIMARY KEY AUTOINCREMENT,
+- CropLifecycleDefinitionId: INTEGER, FK to CropLifecycleDefinition(Id)
+- Stage: NVARCHAR(10) NOT NULL,FK to CropStagesLov(Code).
+- StageOrder: INTEGER NOT NULL,
+- MinDaysFromPreviousStage: INTEGER NOT NULL,
+- MaxDaysFromPreviousStage: INTEGER NOT NULL,
+- Description: TEXT,
 
-CREATE TABLE IF NOT EXISTS CropStagesLov (
-            Code NVARCHAR(10) PRIMARY KEY,
-            Description TEXT NOT NULL
-);
+CropStageCaps:
+- Id: INTEGER PRIMARY KEY AUTOINCREMENT,
+- StageName: NVARCHAR(20), NOT NULL, FK to CropStagesLov(Code)
+- Cap: FLOAT NOT NULL,
+- CreatedUser: INTEGER, FK to Users(Id),
+- UpdatedUser: INTEGER, FK to Users(Id),
+- CreatedDate: DATETIME,
+- UpdatedDate: DATETIME,
 
-CREATE TABLE IF NOT EXISTS CropType (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        CropName NVARCHAR(50) NOT NULL,
-        ScientificName NVARCHAR(100),
-        IsPerennial INTEGER DEFAULT 0,
-        CreatedUser INTEGER,
-        UpdatedUser INTEGER,
-        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UpdatedDate DATETIME,
-        FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL
-    );
-
-Create TABLE IF NOT EXISTS CropVariety (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        CropTypeId INTEGER NOT NULL,
-        VarietyName NVARCHAR(50) NOT NULL,
-        MaturityMinDays INTEGER,
-        MaturityMaxDays INTEGER,
-        YieldPerAcre FLOAT,
-        ShelfLifeDays INTEGER,
-        IsHybrid INTEGER DEFAULT 0,
-        Notes TEXT,
-        CreatedUser INTEGER,
-        UpdatedUser INTEGER,
-        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UpdatedDate DATETIME,
-        FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (CropTypeId) REFERENCES CropType(Id) ON DELETE SET NULL
-    );
-
-CREATE TABLE IF NOT EXISTS CropLifecycleDefinition (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        CropTypeId INTEGER,
-        CropVarietyId Integer,
-        Season NVARCHAR(100),
-        Region NVARCHAR(100),
-        CreatedUser INTEGER,
-        UpdatedUser INTEGER,
-        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UpdatedDate DATETIME,
-        FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (CropTypeId) REFERENCES CropType(Id) ON DELETE CASCADE,
-        FOREIGN KEY (CropVarietyId) REFERENCES CropVariety(Id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS CropLifeCycleStages (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        CropLifecycleDefinitionId INTEGER,
-        StageName NVARCHAR(100) NOT NULL,
-        StageOrder INTEGER NOT NULL,
-        MinDaysFromPreviousStage INTEGER NOT NULL,
-        MaxDaysFromPreviousStage INTEGER NOT NULL,
-        Description TEXT,
-        FOREIGN KEY (CropLifecycleDefinitionId) REFERENCES CropLifecycleDefinition(Id) ON DELETE CASCADE,
-        FOREIGN KEY (StageName) REFERENCES CropStagesLov(Code) ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS CropStageCaps (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        StageName NVARCHAR(20) NOT NULL,
-        Cap FLOAT NOT NULL,
-        CreatedUser INTEGER,
-        UpdatedUser INTEGER,
-        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UpdatedDate DATETIME,
-        FOREIGN KEY (StageName) REFERENCES CropStagesLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL
-    );
 
 
 
