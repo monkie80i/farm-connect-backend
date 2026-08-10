@@ -436,22 +436,39 @@ const getCropTypes = (req, res) => {
 
 const createCropTypes = (req, res) => {
   try {
-    const { cropName, scientificName, isPerennial } = req.body;
-
+    const { cropName, scientificName, growthDurationType,isActive } = req.body;
+    const stmnt = `INSERT INTO CropType(CropName,ScientificName,GrowthDurationType,IsActive) VALUES (?,?,?,?)`;
     const cropTypes = db
-      .prepare(
-        `
-      INSERT INTO CropType(CropName,ScientificName,IsPerennial)
-      VALUES (?,?,?)
-      `,
-      )
-      .run(
-        formatSQLValue(cropName),
-        formatSQLValue(scientificName),
-        formatSQLValue(isPerennial),
-      );
-
+      .prepare(stmnt)
+      .run(cropName,scientificName,growthDurationType,isActive);
     return successResponse(res, cropTypes.lastInsertRowid);
+  } catch (error) {
+    console.log("createCropTypes", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const getCropTypeById = (cropTypeId) => {
+  return db.prepare(`SELECT * FROM CropType WHERE Id = ?`).get(cropTypeId);
+};
+
+const updateCropType = (req, res) => {
+  try {
+    const { cropTypeId } = req.params;
+    const cropType = getCropTypeById(cropTypeId);
+    const { cropName, scientificName, growthDurationType,isActive } = req.body;
+
+    if(!cropType) {
+      return notFound(res,'Crop Type not found!');
+    }
+   
+    const stmnt = `UPDATE CropType SET 
+      CropName = ?,ScientificName = ?, GrowthDurationType = ?, IsActive = ? 
+      WHERE Id=?`;
+    const cropTypes = db
+      .prepare(stmnt)
+      .run(cropName,scientificName,growthDurationType,isActive,cropTypeId);
+    return successResponse(res, cropTypes.changes);
   } catch (error) {
     console.log("createCropTypes", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
@@ -461,9 +478,11 @@ const createCropTypes = (req, res) => {
 const getCropType = (req, res) => {
   try {
     const cropTypeId = req.params.cropTypeId;
-    const cropType = db
-      .prepare(`SELECT * FROM CropType WHERE Id = ?;`)
-      .get(cropTypeId);
+    const cropType = getCropTypeById(cropTypeId)
+
+    if(!cropType) {
+      return notFound(res,'Crop Type not found!');
+    }
 
     return successResponse(res, toCamelCaseObject(cropType));
   } catch (error) {
@@ -479,9 +498,7 @@ const deleteCropType = (req, res) => {
     const result = stmt.run(cropTypeId);
 
     if (result.changes === 0) {
-      return res
-        .status(404)
-        .json({ message: "Crop Type not found!", data: null });
+      return notFound(res,'Crop Type not found!');
     }
 
     return successResponse(res, null, "Crop Type deleted successfully!");
@@ -1131,6 +1148,7 @@ module.exports = {
   getCropTypes,
   createCropTypes,
   getCropType,
+  updateCropType,
   deleteCropType,
   getCropVarieities,
   createCropVarieities,

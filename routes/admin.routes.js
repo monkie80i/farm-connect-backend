@@ -6,6 +6,7 @@ const {
     getCropTypes,
     createCropTypes,
     getCropType,
+    updateCropType,
     deleteCropType,
     getCropVarieities,
     createCropVarieities,
@@ -32,7 +33,7 @@ router.post("/crop-types", createCropTypes); // tested working
 
 router.get("/crop-type/:cropTypeId", getCropType); // tested working
 
-router.put("/crop-type/:cropTypeId", (req, res) => {}); // later
+router.put("/crop-type/:cropTypeId", updateCropType); // tested working
 
 router.delete("/crop-type/:cropTypeId", deleteCropType); // tested working
 
