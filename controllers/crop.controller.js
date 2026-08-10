@@ -911,6 +911,123 @@ const getCropLifeCycleDefenitionDetails = (req, res) => {
   }
 };
 
+const updateCropLifeCycleDefenition = (req, res) => {
+  try {
+    const cropLifecycleDefId = Number(req.params.cropLifecycleDefId);
+    const { stages, updatedUser } = req.body;
+
+    if (!Number.isInteger(cropLifecycleDefId)) {
+      return errorResponse(res, "cropLifecycleDefId must be an integer", 400);
+    }
+    if (!Array.isArray(stages) || stages.length === 0) {
+      return errorResponse(res, "stages must be a non-empty array", 400);
+    }
+
+    const definition = db
+      .prepare(`SELECT Id FROM CropLifecycleDefinition WHERE Id = ?`)
+      .get(cropLifecycleDefId);
+
+    if (!definition) {
+      return notFound(res, "CropLifecycleDefinition not found");
+    }
+
+    // Load existing stages for this definition so we can validate ownership
+    // and min/max against the fields actually being edited.
+    const existingStages = db
+      .prepare(
+        `SELECT Id, MinDaysFromPreviousStage, MaxDaysFromPreviousStage 
+         FROM CropLifeCycleStages 
+         WHERE CropLifecycleDefinitionId = ?`,
+      )
+      .all(cropLifecycleDefId);
+
+    const existingStageIds = new Set(existingStages.map((s) => s.Id));
+    const existingById = new Map(existingStages.map((s) => [s.Id, s]));
+
+    for (const [index, stage] of stages.entries()) {
+      const prefix = `stages[${index}]`;
+      if (!Number.isInteger(stage.id)) {
+        return errorResponse(res, `${prefix}.id is required`, 400);
+      }
+      if (!existingStageIds.has(stage.id)) {
+        return errorResponse(
+          res,
+          `${prefix}.id (${stage.id}) does not belong to definition ${cropLifecycleDefId}`,
+          400,
+        );
+      }
+      if (
+        !Number.isInteger(stage.minDaysFromPreviousStage) ||
+        stage.minDaysFromPreviousStage < 0
+      ) {
+        return errorResponse(
+          res,
+          `${prefix}.minDaysFromPreviousStage must be a non-negative integer`,
+          400,
+        );
+      }
+      if (
+        !Number.isInteger(stage.maxDaysFromPreviousStage) ||
+        stage.maxDaysFromPreviousStage < 0
+      ) {
+        return errorResponse(
+          res,
+          `${prefix}.maxDaysFromPreviousStage must be a non-negative integer`,
+          400,
+        );
+      }
+      if (stage.maxDaysFromPreviousStage < stage.minDaysFromPreviousStage) {
+        return errorResponse(
+          res,
+          `${prefix}.maxDaysFromPreviousStage must be >= minDaysFromPreviousStage`,
+          400,
+        );
+      }
+    }
+
+    const updateStageStmt = db.prepare(`
+      UPDATE CropLifeCycleStages
+      SET MinDaysFromPreviousStage = @min,
+          MaxDaysFromPreviousStage = @max,
+          UpdatedDate = CURRENT_TIMESTAMP,
+          UpdatedUser = @updatedUser
+      WHERE Id = @id
+    `);
+
+    const touchDefinitionStmt = db.prepare(`
+      UPDATE CropLifecycleDefinition
+      SET UpdatedDate = CURRENT_TIMESTAMP,
+          UpdatedUser = @updatedUser
+      WHERE Id = @id
+    `);
+
+    const applyEdit = db.transaction((stagesToUpdate) => {
+      stagesToUpdate.forEach((stage) => {
+        updateStageStmt.run({
+          id: stage.id,
+          min: stage.minDaysFromPreviousStage,
+          max: stage.maxDaysFromPreviousStage,
+          updatedUser: updatedUser ?? null,
+        });
+      });
+      touchDefinitionStmt.run({ id: cropLifecycleDefId, updatedUser: updatedUser ?? null });
+    });
+
+    applyEdit(stages);
+
+    const updatedStages = db
+      .prepare(
+        `SELECT * FROM CropLifeCycleStages WHERE CropLifecycleDefinitionId = ? ORDER BY StageOrder`,
+      )
+      .all(cropLifecycleDefId);
+
+    return successResponse(res, toCamelCaseObject(updatedStages));
+  } catch (error) {
+    console.log("updateCropLifeCycleDefenition", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
 const deleteCropLifeCycleStage = (req, res) => {
   try {
     const cropLifecycleDefId = req.params.cropLifecycleDefId;
@@ -1026,5 +1143,6 @@ module.exports = {
   defaultStages,
   bulkCreateCropLifeCycleDefenition,
   bulkUpdateCropLifeCycleStageDays,
+  updateCropLifeCycleDefenition
 
 };

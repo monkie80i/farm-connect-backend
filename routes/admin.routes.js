@@ -17,7 +17,8 @@ const {
     deleteCropLifeCycleStage,
     defaultStages,
     bulkCreateCropLifeCycleDefenition,
-    bulkUpdateCropLifeCycleStageDays
+    bulkUpdateCropLifeCycleStageDays,
+    updateCropLifeCycleDefenition
 } = require("../controllers/crop.controller");
 
 
@@ -55,7 +56,7 @@ router.put("/crop-lifecycle-defenitions/bulk-stage-days", bulkUpdateCropLifeCycl
 
 router.get("/crop-lifecycle-defenition/:cropLifecycleDefId", getCropLifeCycleDefenitionDetails);
 
-router.put("/crop-lifecycle-defenition/:cropLifecycleDefId", (req, res) => {}); // later
+router.put("/crop-lifecycle-defenition/:cropLifecycleDefId",updateCropLifeCycleDefenition);
 
 router.delete("/crop-lifecycle-defenition/:cropLifecycleDefId", deleteCropLifeCycleStage);
 
