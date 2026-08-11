@@ -452,6 +452,14 @@ const getCropTypeById = (cropTypeId) => {
   return db.prepare(`SELECT * FROM CropType WHERE Id = ?`).get(cropTypeId);
 };
 
+const getCropVarieityById = (id) => {
+  return db.prepare(`SELECT * FROM CropVariety WHERE Id = ?`).get(id);
+};
+
+const getCropStageCapById = (id) => {
+  return db.prepare(`SELECT * FROM CropStageCaps WHERE Id = ?`).get(id);
+};
+
 const updateCropType = (req, res) => {
   try {
     const { cropTypeId } = req.params;
@@ -467,7 +475,7 @@ const updateCropType = (req, res) => {
       WHERE Id=?`;
     const cropTypes = db
       .prepare(stmnt)
-      .run(cropName,scientificName,growthDurationType,isActive,cropTypeId);
+      .run(cropName,scientificName,growthDurationType,formatSQLValue(isActive),cropTypeId);
     return successResponse(res, cropTypes.changes);
   } catch (error) {
     console.log("createCropTypes", error);
@@ -532,8 +540,18 @@ const createCropVarieities = (req, res) => {
       shelfLifeDays,
       isHybrid,
       notes,
-      userId,
+      isActive,
     } = req.body;
+
+    console.log(cropTypeId,
+      varietyName,
+      maturityMinDays,
+      maturityMaxDays,
+      yieldPerAcre,
+      shelfLifeDays,
+      isHybrid,
+      notes,
+      isActive)
 
     const cropVarieities = db
       .prepare(
@@ -547,26 +565,77 @@ const createCropVarieities = (req, res) => {
         ShelfLifeDays,
         IsHybrid,
         Notes,
-        CreatedUser
+        IsActive
       )
       VALUES (?,?,?,?,?,?,?,?,?)
       `,
       )
       .run(
-        formatSQLValue(cropTypeId),
-        formatSQLValue(varietyName),
-        formatSQLValue(maturityMinDays),
-        formatSQLValue(maturityMaxDays),
-        formatSQLValue(yieldPerAcre),
-        formatSQLValue(shelfLifeDays),
+        cropTypeId,
+        varietyName,
+        maturityMinDays,
+        maturityMaxDays,
+        yieldPerAcre,
+        shelfLifeDays,
         formatSQLValue(isHybrid),
-        formatSQLValue(notes),
-        formatSQLValue(userId),
+        notes,
+        formatSQLValue(isActive)
       );
 
     return successResponse(res, cropVarieities.lastInsertRowid);
   } catch (error) {
     console.log("createCropVarieities", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const updateCropVarieities = (req, res) => {
+  try {
+    const { cropVarietyId } = req.params;
+    const cropVariety = getCropVarieityById(cropVarietyId);
+    const { 
+      cropTypeId,
+      varietyName,
+      maturityMinDays,
+      maturityMaxDays,
+      yieldPerAcre,
+      shelfLifeDays,
+      isHybrid,
+      notes,
+      isActive } = req.body;
+
+    if(!cropVariety) {
+      return notFound(res,'Crop Varitey not found!');
+    }
+   
+    const stmnt = `UPDATE CropVariety SET 
+      CropTypeId = ?,
+      VarietyName = ?,
+      MaturityMinDays = ?,
+      MaturityMaxDays = ?,
+      YieldPerAcre = ?,
+      ShelfLifeDays = ?,
+      IsHybrid = ?,
+      Notes = ?,
+      IsActive = ?
+      WHERE Id=?`;
+    const result = db
+      .prepare(stmnt)
+      .run(
+        cropTypeId,
+        varietyName,
+        maturityMinDays,
+        maturityMaxDays,
+        yieldPerAcre,
+        shelfLifeDays,
+        formatSQLValue(isHybrid),
+        notes,
+        formatSQLValue(isActive),
+        cropVarietyId
+      );
+    return successResponse(res, result.changes);
+  } catch (error) {
+    console.log("updateCropTypes", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
@@ -1133,6 +1202,90 @@ const defaultStages = (req, res) => {
   }
 };
 
+
+//===================
+const getCropStageCaps = (req, res) => {
+  try {
+    const result = db
+      .prepare(`SELECT * FROM CropStageCaps;`)
+      .all();
+
+    return successResponse(res, toCamelCaseObject(result));
+  } catch (error) {
+    console.log("getCropStageCaps", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const createCropStageCaps = (req, res) => {
+  try {
+    const { stageName,cap } = req.body;
+
+    const result = db
+      .prepare(`INSERT INTO CropStageCaps(StageName,Cap) VALUES (?,?)`)
+      .run(stageName,cap);
+
+    return successResponse(res, result.lastInsertRowid);
+  } catch (error) {
+    console.log("createCropStageCaps", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const updateCropStageCap = (req, res) => {
+  try {
+    const { cropStageCapId } = req.params;
+    const cropStageCap = getCropVarieityById(cropStageCapId);
+    const { stageName,cap } = req.body;
+
+    if(!cropStageCap) {
+      return notFound(res,'Crop Stage Cap not found!');
+    }
+   
+    const stmnt = `UPDATE CropStageCaps SET StageName = ?,Cap=? WHERE Id=?`;
+    const result = db
+      .prepare(stmnt)
+      .run(stageName,cap,cropStageCapId);
+    return successResponse(res, result.changes);
+  } catch (error) {
+    console.log("updateCropStageCap", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const getCropStageCap = (req, res) => {
+  try {
+    const cropStageCapId = req.params.cropStageCapId;
+    const result = db
+      .prepare(`SELECT * FROM CropStageCaps WHERE Id = ?;`)
+      .get(cropStageCapId);
+
+    return successResponse(res, toCamelCaseObject(result));
+  } catch (error) {
+    console.log("getCropStageCap", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const deleteCropStageCap = (req, res) => {
+  try {
+    const cropStageCapId = Number(req.params.cropStageCapId);
+    const stmt = db.prepare(`DELETE FROM CropStageCaps WHERE Id = ?`);
+    const result = stmt.run(cropStageCapId);
+
+    if (result.changes === 0) {
+      return res
+        .status(404)
+        .json({ message: "Crop Stage Cap not found!", data: null });
+    }
+
+    return successResponse(res, null, "Crop Stage Cap deleted successfully!");
+  } catch (error) {
+    console.log("deleteCropStageCap", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
 module.exports = {
   getFarmerCrops,
   getCropDetails,
@@ -1161,6 +1314,12 @@ module.exports = {
   defaultStages,
   bulkCreateCropLifeCycleDefenition,
   bulkUpdateCropLifeCycleStageDays,
-  updateCropLifeCycleDefenition
+  updateCropLifeCycleDefenition,
+  updateCropVarieities,
+  getCropStageCaps,
+  createCropStageCaps,
+  getCropStageCap,
+  updateCropStageCap,
+  deleteCropStageCap,
 
 };

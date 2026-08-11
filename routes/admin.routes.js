@@ -19,7 +19,13 @@ const {
     defaultStages,
     bulkCreateCropLifeCycleDefenition,
     bulkUpdateCropLifeCycleStageDays,
-    updateCropLifeCycleDefenition
+    updateCropLifeCycleDefenition,
+    updateCropVarieities,
+    getCropStageCaps,
+    createCropStageCaps,
+    getCropStageCap,
+    updateCropStageCap,
+    deleteCropStageCap,
 } = require("../controllers/crop.controller");
 
 
@@ -43,7 +49,7 @@ router.post("/crop-varieties", createCropVarieities);  // tested working
 
 router.get("/crop-variety/:cropVarietyId", getCropVarieity); // tested working
 
-router.put("/crop-variety/:cropVarietyId", (req, res) => {}); // later
+router.put("/crop-variety/:cropVarietyId",updateCropVarieities); // tested working
 
 router.delete("/crop-variety/:cropVarietyId", deleteCropVarieity); // tested working
 
@@ -62,6 +68,16 @@ router.put("/crop-lifecycle-defenition/:cropLifecycleDefId",updateCropLifeCycleD
 router.delete("/crop-lifecycle-defenition/:cropLifecycleDefId", deleteCropLifeCycleStage);
 
 router.get("/crop-lifecycle-stages-default", defaultStages);
+
+router.get("/crop-stage-caps", getCropStageCaps);  // tested working
+
+router.post("/crop-stage-caps", createCropStageCaps);  // tested working
+
+router.get("/crop-stage-cap/:cropStageCapId", getCropStageCap); // tested working
+
+router.put("/crop-stage-cap/:cropStageCapId",updateCropStageCap); // tested working
+
+router.delete("/crop-stage-cap/:cropStageCapId", deleteCropStageCap); // tested working
 
 module.exports = router;
 
