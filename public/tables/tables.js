@@ -242,3 +242,6 @@ async function initialize() {
 }
 
 initialize();
+
+// add row count for main tables
+// paginate how tables

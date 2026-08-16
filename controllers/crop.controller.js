@@ -18,35 +18,107 @@ const {
   computeYieldFactors,
 } = require("../services/yeild-est.services");
 
+const {
+  createCropBasic,
+  onGoingCropLifeCycleInstanceCreate,
+  newPlantingCropLifeCycleInstanceCreate,
+  setCropGrowthDuration
+} = require("../services/crops.services");
+
+const { log } = require("../services/logger.services");
+
 const ALLOWED_PHASE_TYPES = ["FULL", "ESTABLISHMENT", "RECURRING"];
 const FIELD_TO_COLUMN = {
   minDaysFromPreviousStage: "MinDaysFromPreviousStage",
   maxDaysFromPreviousStage: "MaxDaysFromPreviousStage",
 };
 
-
-
 const getFarmerCrops = (req, res) => {
-  // tested working
+  // 
   try {
+
     const userId = Number(req.params.userId);
-    let page = Number(req.query.page) || 1;
+    const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
 
-    const crops = db
-      .prepare(
-        `
-            SELECT * 
-            FROM Crop 
-            WHERE FarmerId = ?
-            ORDER BY CreatedDate DESC
-            LIMIT ? OFFSET ?
-        `,
-      )
-      .all(userId, pageSize, offset);
+    const allowedFields = [ 
+      'cropTypeId', 'cropVarietyId','farmId','currentStage','healthStatus'
+    ];
 
-    return successResponse(res, toCamelCaseObject(crops));
+    const whereCondtions = [];
+    const params  = [];
+
+    for (const key of allowedFields) {
+      if (key in req.query) {
+        if(req.query[key] !== null && req.query[key].toString().trim() !== "") {
+          const name = capitalize(key);
+          whereCondtions.push(`C.${name}=?`);
+          params.push(req.query[key]);
+        }
+      }
+    }
+    whereCondtions.push('C.FarmerId=?');
+    params.push(userId);
+
+    const whereClause = whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}`: "";
+
+    const  txn = db.transaction(() => {
+      const start = new Date();
+
+      const stmnt = `SELECT
+        C.Id,
+        C.Name,
+        C.CropTypeId,
+        CT.CropName as CropTypeName,
+        C.CropVarietyId,
+        VAR.VarietyName,
+        C.FarmId,
+        F.Name as FarmName,
+        C.FarmerId,
+        Farmer.Username as Farmer,
+        C.ExpectedGrowthDurationDays,
+        C.CultivatedArea,
+        C.CultivatedAreaUnit,
+        C.CultivatedAreaInAcre,
+        C.InitialSoilCondition,
+        C.InitialNotes,
+        C.HealthStatus,
+        C.CurrentStage,
+        C.isLifeCycleEnded,
+        C.CreatedUser,
+        C.UpdatedUser,
+        C.CreatedDate,
+        C.UpdatedDate
+      FROM Crop C
+      INNER JOIN CropType CT ON C.CropTypeId = CT.Id 
+      INNER JOIN CropVariety VAR ON C.CropVarietyId = VAR.Id 
+      INNER JOIN Farm F ON C.FarmId = F.Id 
+      INNER JOIN Users Farmer ON C.FarmerId = Farmer.Id ${whereClause} LIMIT ? OFFSET ?`;
+
+      const result = db.prepare(stmnt).all(...params,pageSize, offset);
+
+      // Get total count for pagination
+      const countStmnt = db.prepare(
+        `SELECT COUNT(DISTINCT Id) as total 
+        FROM Crop C
+        ${whereClause}`,
+      );
+      const { total } = countStmnt.get(...params);
+      console.log(`time elapsed with join (${Date.now() - start} ms)`)
+      return {
+        data: toCamelCaseObject(result),
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      }
+
+    });
+
+    const txnResult = txn();
   } catch (error) {
     console.log("getFarmerCrops", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
@@ -70,113 +142,198 @@ const getCropDetails = (req, res) => {
   }
 };
 
-const createCrop = (req, res) => {
-  // tested working
+
+/**
+ * Creates a new Crop and initializes its lifecycle tracking (HarvestCycleInstance +
+ * CropStages) in a single transaction, supporting two entry modes:
+ *
+ *   NEW_PLANTING
+ *     Farmer supplies a start date. Lifecycle instances are generated forward
+ *     from that date for each applicable CropLifecycleDefinition (FULL, or
+ *     ESTABLISHMENT + RECURRING). No CropStages rows are created at this
+ *     point — only projected HarvestCycleInstance rows (start date, cycle
+ *     label, estimated harvest date). Stages get recorded later as the
+ *     farmer logs actual progress.
+ *
+ *   EXISTING_ONGOING
+ *     Farmer supplies their current stage (and its observed date) instead of
+ *     a planting date. The stage is resolved against the crop's
+ *     CropLifecycleDefinition(s), and:
+ *       - The current stage's cycle is backfilled: CropStages from the
+ *         inferred start (e.g. LAND) up to the current stage are created,
+ *         with the current stage marked ObservationType 'MANUAL' and all
+ *         earlier stages marked 'ESTM' (estimated via mean stage durations).
+ *       - If the current stage falls in ESTABLISHMENT, a RECURRING
+ *         HarvestCycleInstance is also projected forward (no stages, since
+ *         the farmer hasn't reached it yet).
+ *       - If the current stage falls in RECURRING, the ESTABLISHMENT phase
+ *         that must have already completed is backfilled retroactively
+ *         (Scenario X: its end date is derived from the recurring cycle's
+ *         start, then its own stages are backtracked from there).
+ *
+ * Flow:
+ *   1. Validate entryMode and its required fields (startDate, or
+ *      currentStageCode + currentStageObservedDate).
+ *   2. Resolve CropVariety, Farm/Region, and matching CropLifecycleDefinition
+ *      row(s) for (varietyId, region, season) — falling back to 'ALL'
+ *      region / 'YEARROUND' season where applicable.
+ *   3. Sort resolved definitions FULL → ESTABLISHMENT → RECURRING, since
+ *      RECURRING's start date is derived from ESTABLISHMENT's computed end
+ *      date and must be processed after it.
+ *   4. In a single DB transaction:
+ *      a. Insert the base Crop row.
+ *      b. Branch on entryMode to newPlantingCropLifeCycleInstanceCreate() or
+ *         onGoingCropLifeCycleInstanceCreate(), which create the
+ *         HarvestCycleInstance(s) and, for EXISTING_ONGOING, CropStages.
+ *      c. Persist the computed ExpectedGrowthDurationDays back onto Crop.
+ *
+ * Expected request body:
+ *   name, cropTypeId, varietyId, farmId, cultivatedArea, cultivatedAreaUnit,
+ *   initialSoilCondition, initialNotes, season, entryMode
+ *   entryMode === "NEW_PLANTING":
+ *     startDate: ISODate ("YYYY-MM-DD")
+ *   entryMode === "EXISTING_ONGOING":
+ *     currentStageCode: CropStageCode
+ *     currentStageObservedDate: ISODate  (frontend is responsible for
+ *       defaulting this to today if the farmer doesn't provide one)
+ *
+ * Responses:
+ *   400 - invalid/missing entryMode fields, invalid farm/region, or no
+ *         matching CropLifecycleDefinition for the variety/region/season
+ *   404 - crop variety not found
+ *   201 - crop created; body contains the new Crop id
+ *   500 - unexpected error (transaction rolled back)
+ *
+ * @param {import('express').Request} req - req.params.userId identifies the farmer.
+ * @param {import('express').Response} res
+ * @returns {void} Sends the HTTP response directly.
+ */
+const cropInitializer = (req, res) => {  
   try {
+    const depth = 0;
+    const indent = " ".repeat(depth*4);
+    log(indent,`cropInitializer started`);
     const userId = Number(req.params.userId);
+
     const {
       name,
       cropTypeId,
       varietyId,
       farmId,
-      landPrepDate,
-      sowingDate,
       cultivatedArea,
       cultivatedAreaUnit,
       initialSoilCondition,
       initialNotes,
+      season,
+      entryMode,
     } = req.body;
+
+    const optionalFields = {
+      "NEW_PLANTING": ['startDate'],
+      "EXISTING_ONGOING": ['currentStageCode','currentStageObservedDate']
+    }
+
+    if(!["NEW_PLANTING","EXISTING_ONGOING"].includes(entryMode)) {
+      return errorResponse(res,'Invalid Entry Mode! Only ["NEW_PLANTING","EXISTING_ONGOING"]',400);
+    }
+
+    const optionalFieldValues = {};
+
+    for (const key of optionalFields[entryMode]) {
+      const value = req.body[key];
+      if (!value?.toString().trim()) {
+        return errorResponse(res,`${key} is required for entry mode ${entryMode}!`,400);
+      }
+
+      optionalFieldValues[entryMode] ??= {};
+      optionalFieldValues[entryMode][key] = value;
+    }
+
+    log(indent,'optionalFieldValues',optionalFieldValues)
+
     const cultivatedAreaInAcres = convertToAcre(
       cultivatedArea,
       cultivatedAreaUnit,
     );
 
-    const lifeCycleStmnt = db.prepare(`
-      SELECT 
-      l.CropTypeId,l.CropTypeId,
-      s.StageName,s.StageOrder,
-      s.MinDaysFromPreviousStage,s.MaxDaysFromPreviousStage,s.Description
-      FROM CropLifecycleDefinition l JOIN CropLifeCycleStages s
-      ON l.Id = s.CropLifecycleDefinitionId
-      WHERE l.CropVarietyId = ?
-      ORDER BY s.StageOrder ASC;
+    const cropVariety = getCropVarieityById(varietyId);
+    if(!cropVariety) {
+      return notFound(res,'Crop Varitey not found!');
+    }
 
-    `);
+    const regionResult = db
+      .prepare(`SELECT State FROM Farm WHERE Id = ? AND UserId = ?`)
+      .get(farmId,userId)
+    ;
 
-    const lifecycle = toCamelCaseObject(lifeCycleStmnt.all(varietyId));
-    const growthDur = lifecycle.filter((stage) => stage.stageName === "MAT")[0]
-      .maxDaysFromPreviousStage;
+    if(!regionResult) {
+      return errorResponse(res,'Invalid Farm Or its Region!',400);
+    }
 
-    const cropCreatetrnsaction = db.transaction(() => {
-      const createCropStmnt = db.prepare(`
-      INSERT INTO Crop 
-        (
-            Name, CropTypeId, VarietyId, FarmId, 
-            FarmerId,LandPrepDate, SowingDate, CultivatedArea, 
-            CultivatedAreaUnit,CultivatedAreaInAcre,
-            ExpectedGrowthDurationDays, InitialSoilCondition, 
-            InitialNotes, CreatedUser
-        ) 
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);
-      `);
-      const cropResult = createCropStmnt.run(
+    const region = toCamelCaseObject(regionResult).state;
+
+    log(indent,varietyId,region,season)
+
+    const stmnt1 = `
+      SELECT * FROM CropLifecycleDefinition 
+      WHERE CropVarietyId = ?
+      AND (Region = ? OR Region = 'ALL')
+      AND (Season = ? OR Season = 'YEARROUND')`;
+    const defs = toCamelCaseObject(db.prepare(stmnt1).all(varietyId,region,season));
+
+    if (!defs.length) {
+      return errorResponse(res, 'No lifecycle definition found for this variety/region/season.',400);
+    }
+
+    const phaseOrder = { FULL: 0, ESTABLISHMENT: 1, RECURRING: 2 };
+    defs.sort((a, b) => phaseOrder[a.phaseType] - phaseOrder[b.phaseType]);
+
+    const createTxn = db.transaction(() => {
+      const newCropId = createCropBasic(
         name,
         cropTypeId,
         varietyId,
         farmId,
         userId,
-        landPrepDate,
-        sowingDate,
         cultivatedArea,
         cultivatedAreaUnit,
         cultivatedAreaInAcres,
-        growthDur,
         initialSoilCondition,
-        initialNotes,
-        userId,
+        initialNotes
       );
 
-      const savedCropId = cropResult.lastInsertRowid;
+      log(indent,"crop created :", newCropId)
 
-      const cropStagesStmnt = db.prepare(`
-      INSERT INTO CropStageProgress 
-      (CropId,StageName,StageOrder,EstStartDate,EstEndDate)
-      VALUES (?,?,?,?,?);`);
-
-      let estHarvDate;
-
-      for (const stage of lifecycle) {
-        const estStartDate = addDate(
-          sowingDate,
-          stage.minDaysFromPreviousStage,
-        );
-        const estEndDate = addDate(sowingDate, stage.maxDaysFromPreviousStage);
-
-        cropStagesStmnt.run(
-          savedCropId,
-          stage.stageName,
-          stage.stageOrder,
-          estStartDate,
-          estEndDate,
-        );
-
-        if (stage.stageName === "HARW") {
-          estHarvDate = estStartDate;
+      let expGrowthDurDays;
+      switch(entryMode) {
+        case('NEW_PLANTING'): {
+          log(indent,"enter new planting")
+          const startDate = optionalFieldValues[entryMode]['startDate'];
+          expGrowthDurDays = newPlantingCropLifeCycleInstanceCreate(newCropId,defs,startDate,depth+1);
+          break;
+        } 
+        case('EXISTING_ONGOING'): {
+          log(indent,"enter ongoing")
+          const currentStageCode = optionalFieldValues[entryMode]['currentStageCode'];
+          const currentStageObservedDate = optionalFieldValues[entryMode]['currentStageObservedDate'];
+          expGrowthDurDays = onGoingCropLifeCycleInstanceCreate(newCropId,defs,currentStageCode,currentStageObservedDate,depth+1);
+          break;
         }
+        default: break;
       }
+      log(indent,"out expGrowthDurDays", expGrowthDurDays);
+      setCropGrowthDuration(expGrowthDurDays,newCropId);
+      log(indent,"out end");
 
-      const updateCropStmnt = db.prepare(
-        `UPDATE Crop SET EstdHarvestDate = ? WHERE Id = ?`,
-      );
-      updateCropStmnt.run(estHarvDate, savedCropId);
 
-      return savedCropId;
+      throw new Error('__ROLL_BACK__');
+      return newCropId
     });
 
-    const cropId = cropCreatetrnsaction();
-    return successResponse(res, { cropId }, "Crop created successfully!", 201);
+    const cropId = createTxn();
+    return successResponse(res, cropId, "Crop created successfully!", 201);
   } catch (error) {
-    console.log("createCrop", error);
+    console.log("cropInitializer", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
@@ -691,7 +848,6 @@ const searchCropLifeCycleDefenitions = (req, res) => {
       if (key in req.query) {
         if(req.query[key] !== null && req.query[key].toString().trim() !== "") {
           const name = capitalize(key);
-          console.log('name',name)
           whereCondtions.push(`DEF.${name}=?`);
           params.push(req.query[key]);
         }
@@ -1289,7 +1445,7 @@ const deleteCropStageCap = (req, res) => {
 module.exports = {
   getFarmerCrops,
   getCropDetails,
-  createCrop,
+  cropInitializer,
   editCrop,
   deleteCrop,
   markCropAsHarvested,

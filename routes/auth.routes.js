@@ -9,7 +9,4 @@ router.get("/verify-email", verifyEmail);
 router.post("/forgot-password", forgotPassword);
 router.post("/password-reset", passwordReset);
 
-
-
-
 module.exports = router;

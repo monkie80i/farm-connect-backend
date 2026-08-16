@@ -72,10 +72,8 @@ const loginUser = (req, res) => {
 const runsql = (req,res) => {
   try {
     const query = req.body.query;
-    console.log(query)
     const stmnt = db.prepare(query);
     const result = stmnt.all();
-    console.log(result)
 
     return successResponse(res,result);
   } catch (error) {

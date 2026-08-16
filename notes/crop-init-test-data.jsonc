@@ -1,0 +1,82 @@
+[
+
+// new perinnial
+
+{
+  "name": "Nadan Thenga 2026",
+  "cropTypeId": 11,
+  "varietyId": 17,
+  "farmId": 3,
+  "cultivatedArea": 500,
+  "cultivatedAreaUnit": "SQM",
+  "initialSoilCondition": "Well-drained loamy soil with pH 6.5",
+  "initialNotes": "Planted with proper spacing",
+  "season": "MONSOON",
+  "entryMode": "NEW_PLANTING",
+  "startDate": "2026-09-12"
+},
+
+// new non perinnial
+{
+  "name": "Tomato 2026",
+  "cropTypeId": 4,
+  "varietyId": 10,
+  "farmId": 3,
+  "cultivatedArea": 500,
+  "cultivatedAreaUnit": "SQM",
+  "initialSoilCondition": "Well-drained loamy soil with pH 6.5",
+  "initialNotes": "Planted with proper spacing",
+  "season": "MONSOON",
+  "entryMode": "NEW_PLANTING",
+  "startDate": "2026-09-12"
+},
+
+// existing perinnial 
+// establisng stage
+{
+  "name": "Nadan Thenga 2026",
+  "cropTypeId": 11,
+  "varietyId": 17,
+  "farmId": 3,
+  "cultivatedArea": 500,
+  "cultivatedAreaUnit": "SQM",
+  "initialSoilCondition": "Well-drained loamy soil with pH 6.5",
+  "initialNotes": "Planted with proper spacing",
+  "season": "MONSOON",
+  "entryMode": "EXISTING_ONGOING",
+  "currentStageCode": "GERM",
+  "currentStageObservedDate": "2026-09-12"
+},
+// existing perinnial
+// reccuring stage
+
+{
+  "name": "Nadan Thenga 2026",
+  "cropTypeId": 11,
+  "varietyId": 17,
+  "farmId": 3,
+  "cultivatedArea": 500,
+  "cultivatedAreaUnit": "SQM",
+  "initialSoilCondition": "Well-drained loamy soil with pH 6.5",
+  "initialNotes": "Planted with proper spacing",
+  "season": "MONSOON",
+  "entryMode": "EXISTING_ONGOING",
+  "currentStageCode": "FRUIT",
+  "currentStageObservedDate": "2026-09-12"
+},
+//exsitng non perinnial
+{
+  "name": "Tomato 2026",
+  "cropTypeId": 4,
+  "varietyId": 10,
+  "farmId": 3,
+  "cultivatedArea": 500,
+  "cultivatedAreaUnit": "SQM",
+  "initialSoilCondition": "Well-drained loamy soil with pH 6.5",
+  "initialNotes": "Planted with proper spacing",
+  "season": "MONSOON",
+  "entryMode": "EXISTING_ONGOING",
+  "currentStageCode": "FRUIT",
+  "currentStageObservedDate": "2026-09-12"
+}
+]

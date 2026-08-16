@@ -65,6 +65,15 @@ const compareDates = (date1, date2) => {
   return 0; // dates are equal
 };
 
+const isDayInRange = (day,start,end) => {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const dayDate =  new Date(day)
+
+  if(startDate < dayDate && dayDate < endDate) return true;
+  return false
+}
+
 const getTodayDate = () => {
   const today = new Date();
   const year = today.getFullYear();
@@ -145,6 +154,39 @@ function getFutureDateISO(inputDate = null, days = 5, fullISO = false) {
     return utcDate.toISOString().split("T")[0];
 }
 
+/**
+ * Returns a date string N days from given date.
+ * @param {Date|string|null} inputDate  (optional) JS Date or date string
+ * @param {number} days  Number of days to add (default 5)
+ * @param {boolean} fullISO  true => full ISO, false => only YYYY-MM-DD
+ */
+function getPastDateISO(inputDate = null, days = 5, fullISO = false) {
+    // Step 1: normalize input
+    let baseDate = inputDate ? new Date(inputDate) : new Date();
+
+    if (isNaN(baseDate)) {
+        throw new Error("Invalid date passed");
+    }
+
+    // Step 2: create UTC date (THIS avoids timezone bugs)
+    const utcDate = new Date(Date.UTC(
+        baseDate.getUTCFullYear(),
+        baseDate.getUTCMonth(),
+        baseDate.getUTCDate()
+    ));
+
+    // Step 3: add days safely
+    utcDate.setUTCDate(utcDate.getUTCDate() - days);
+
+    // Step 4: output
+    if (fullISO) {
+        return utcDate.toISOString();
+    }
+
+    // only date part
+    return utcDate.toISOString().split("T")[0];
+}
+
 
 function capitalize(str) {
   /**
@@ -172,6 +214,22 @@ const timeElapsed = (time1,time2) => {
   return `${diffInHours}:${diffInMins % 60}:${diffInSecs}`; 
 };
 
+const getSeasonFromDate = (date) => {
+    // ISO : 2026-08-13 YYYY-MM-DD
+
+    // Winter: December to February
+    // Summer (Pre-Monsoon): March to May
+    // Monsoon (Rainy): June to September
+    // Post-Monsoon (Autumn): October to November [1]
+    const dt = new Date(date);
+    const month = dt.getMonth();
+    if(month >= 2 && month <= 4) return 'SUMMER';// [march,may] 
+    else if(month >= 5 && month <= 8) return 'MONSOON';// [june,sept]
+    else if(month >= 9 && month <= 10) return 'AUTUMN';// [october,november]
+    else if(month >= 11 || month <= 1) return 'WINTER';// [december,february]
+    return null;
+}
+
 module.exports = {
   toCamelCaseObject,
   formatSQLValue,
@@ -185,4 +243,7 @@ module.exports = {
   capitalize,
   pascalToCamel,
   timeElapsed,
+  isDayInRange,
+  getSeasonFromDate,
+  getPastDateISO,
 };

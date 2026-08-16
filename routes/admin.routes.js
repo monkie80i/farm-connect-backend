@@ -53,21 +53,21 @@ router.put("/crop-variety/:cropVarietyId",updateCropVarieities); // tested worki
 
 router.delete("/crop-variety/:cropVarietyId", deleteCropVarieity); // tested working
 
-router.get("/crop-lifecycle-defenitions", searchCropLifeCycleDefenitions);
+router.get("/crop-lifecycle-defenitions", searchCropLifeCycleDefenitions); // tested working
 
 router.post("/crop-lifecycle-defenitions", createCropLifeCycleDefenition); // tested working
 
-router.post("/crop-lifecycle-defenitions/bulk", bulkCreateCropLifeCycleDefenition); 
+router.post("/crop-lifecycle-defenitions/bulk", bulkCreateCropLifeCycleDefenition); // tested working
 
-router.put("/crop-lifecycle-defenitions/bulk-stage-days", bulkUpdateCropLifeCycleStageDays);
+router.put("/crop-lifecycle-defenitions/bulk-stage-days", bulkUpdateCropLifeCycleStageDays); // tested working
 
-router.get("/crop-lifecycle-defenition/:cropLifecycleDefId", getCropLifeCycleDefenitionDetails);
+router.get("/crop-lifecycle-defenition/:cropLifecycleDefId", getCropLifeCycleDefenitionDetails); // tested working
 
-router.put("/crop-lifecycle-defenition/:cropLifecycleDefId",updateCropLifeCycleDefenition);
+router.put("/crop-lifecycle-defenition/:cropLifecycleDefId",updateCropLifeCycleDefenition); // tested working
 
-router.delete("/crop-lifecycle-defenition/:cropLifecycleDefId", deleteCropLifeCycleStage);
+router.delete("/crop-lifecycle-defenition/:cropLifecycleDefId", deleteCropLifeCycleStage); // tested working
 
-router.get("/crop-lifecycle-stages-default", defaultStages);
+router.get("/crop-lifecycle-stages-default", defaultStages); // ??
 
 router.get("/crop-stage-caps", getCropStageCaps);  // tested working
 

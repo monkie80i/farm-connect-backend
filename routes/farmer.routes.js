@@ -4,7 +4,7 @@ const { getFarmerDashboard } = require('../controllers/farmer.controller');
 const {
     getFarmerCrops,
     getCropDetails,
-    createCrop,
+    cropInitializer,
     editCrop,
     deleteCrop,
     markCropAsHarvested,
@@ -64,7 +64,7 @@ router.get('/health-alerts/:userId', (req,res) => {
 
 router.get('/crops/:userId', getFarmerCrops); // tested working
 
-router.post('/crops/:userId', createCrop); // tested working
+router.post('/crops/:userId', cropInitializer); // tested working
 
 router.get('/crop/:cropId', getCropDetails); // tested working
 
