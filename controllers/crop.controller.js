@@ -22,10 +22,16 @@ const {
   createCropBasic,
   onGoingCropLifeCycleInstanceCreate,
   newPlantingCropLifeCycleInstanceCreate,
-  setCropGrowthDuration
+  setCropGrowthDuration,
+  HARV_CODE,
+  getHealthSummary,
+  getCropListingSummary,
+  getCropHarvestSummary,
+  cropYieldSummary,
 } = require("../services/crops.services");
 
 const { log } = require("../services/logger.services");
+const { buildCropTimeline } = require("../services/timeline.services");;
 
 const ALLOWED_PHASE_TYPES = ["FULL", "ESTABLISHMENT", "RECURRING"];
 const FIELD_TO_COLUMN = {
@@ -43,7 +49,7 @@ const getFarmerCrops = (req, res) => {
     const offset = (page - 1) * pageSize;
 
     const allowedFields = [ 
-      'cropTypeId', 'cropVarietyId','farmId','currentStage','healthStatus'
+      'cropTypeId', 'varietyId','farmId','currentStage','healthStatus'
     ];
 
     const whereCondtions = [];
@@ -71,7 +77,7 @@ const getFarmerCrops = (req, res) => {
         C.Name,
         C.CropTypeId,
         CT.CropName as CropTypeName,
-        C.CropVarietyId,
+        C.VarietyId,
         VAR.VarietyName,
         C.FarmId,
         F.Name as FarmName,
@@ -80,19 +86,14 @@ const getFarmerCrops = (req, res) => {
         C.ExpectedGrowthDurationDays,
         C.CultivatedArea,
         C.CultivatedAreaUnit,
-        C.CultivatedAreaInAcre,
-        C.InitialSoilCondition,
-        C.InitialNotes,
         C.HealthStatus,
         C.CurrentStage,
         C.isLifeCycleEnded,
-        C.CreatedUser,
-        C.UpdatedUser,
         C.CreatedDate,
         C.UpdatedDate
       FROM Crop C
       INNER JOIN CropType CT ON C.CropTypeId = CT.Id 
-      INNER JOIN CropVariety VAR ON C.CropVarietyId = VAR.Id 
+      INNER JOIN CropVariety VAR ON C.VarietyId = VAR.Id 
       INNER JOIN Farm F ON C.FarmId = F.Id 
       INNER JOIN Users Farmer ON C.FarmerId = Farmer.Id ${whereClause} LIMIT ? OFFSET ?`;
 
@@ -119,6 +120,8 @@ const getFarmerCrops = (req, res) => {
     });
 
     const txnResult = txn();
+
+    return successResponse(res,txnResult);
   } catch (error) {
     console.log("getFarmerCrops", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
@@ -126,14 +129,43 @@ const getFarmerCrops = (req, res) => {
 };
 
 const getCropDetails = (req, res) => {
-  // tested working
   try {
     const cropId = Number(req.params.cropId);
-    const crop = db.prepare(`SELECT * FROM Crop WHERE Id = ?`).get(cropId);
+    const crop = toCamelCaseObject(db
+      .prepare(`
+        SELECT 
+        C.*,
+        CT.CropName as CropTypeName,
+        V.VarietyName,
+        F.Name as FarmName
+        FROM Crop C 
+        INNER JOIN CropType CT ON C.CropTypeId = CT.Id
+        INNER JOIN CropVariety V ON C.VarietyId = V.Id
+        INNER JOIN Farm F ON C.FarmId = F.Id
+        WHERE C.Id = ?
+      `)
+      .get(cropId));
 
     if (!crop) {
       return notFound(res,"Crop not found!" );
     }
+
+
+    const harvestSummary = getCropHarvestSummary(cropId);
+    const currentInstanceId = harvestSummary.currentId;
+    const harvestCycleInstance = harvestSummary.harvestCycle
+  
+    crop["healthProgressSummary"] = getHealthSummary(currentInstanceId);
+    crop['listingSummary'] = getCropListingSummary(currentInstanceId);
+    crop['timeLine']  = buildCropTimeline(cropId);
+
+    // Yield and harvest
+    crop['yieldAndHarvest'] = cropYieldSummary(
+      crop,
+      harvestCycleInstance,
+      harvestSummary.actualYield,
+      harvestSummary.estHarvDate
+    );
 
     return successResponse(res, toCamelCaseObject(crop));
   } catch (error) {
@@ -326,7 +358,6 @@ const cropInitializer = (req, res) => {
       log(indent,"out end");
 
 
-      throw new Error('__ROLL_BACK__');
       return newCropId
     });
 
@@ -403,8 +434,8 @@ const getCropLifecycle = (req, res) => {
     const stages = db
       .prepare(
         `
-      SELECT * from CropStageProgress WHERE CropId = ? ORDER BY StageOrder ASC;
-    `,
+        SELECT * from CropStages WHERE CropId = ? ORDER BY StageOrder ASC;
+      `,
       )
       .all(cropId);
 

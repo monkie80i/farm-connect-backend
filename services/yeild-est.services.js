@@ -5,6 +5,7 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
+// Unchanged — CropStageCaps schema didn't change.
 function getStageCap(stageCode) {
   const capRows = db.prepare(`SELECT StageName,Cap FROM CropStageCaps;`).all();
   const caps = capRows.reduce((acc, row) => {
@@ -15,79 +16,93 @@ function getStageCap(stageCode) {
   return caps[stageCode] || 1.0;
 }
 
+// HealthStatusLov: CRIT, HARV, HLTY, MINOR, RISK
 function getHealthReduction(healthStatus) {
   const reductions = {
     HLTY: 0.0,
     MINOR: 0.05,
     RISK: 0.15,
     CRIT: 0.30,
+    // HARV = crop already harvested. Yield at this point should reflect
+    // ActualYield (on HarvestCycleInstance), not an estimate — so no
+    // reduction is applied here, but the caller probably shouldn't be
+    // calling calculateYieldEstimation for a harvested cycle at all.
+    // Flagging rather than guessing — want your call on this before I bake it in.
+    HARV: 0.0,
   };
 
   return reductions[healthStatus] || 0.0;
 }
 
 /**
- * Calculates Yield Estimation
- * @param {Object} crop
- * @param {number} crop.cultivatedAreaInAcre
- * @param {string} crop.sowingDate
- * @param {string} crop.estdHarvestDate
- * @param {string} crop.currentStage
- * @param {string} crop.healthStatus
+ * Calculates Yield Estimation for a crop's active harvest cycle.
  *
- * @param {Object} variety
+ * Expects camelCase objects (i.e. already passed through toCamelCaseObject).
+ *
+ * @param {Object} crop - row from Crop
+ * @param {number} crop.cultivatedAreaInAcre
+ * @param {string} crop.healthStatus
+ * @param {string} [crop.currentStage] - fallback if the cycle doesn't have one
+ *
+ * @param {Object} harvestCycleInstance - row from HarvestCycleInstance
+ * @param {string} harvestCycleInstance.startDate
+ * @param {string} harvestCycleInstance.estdHarvestDate
+ * @param {string} harvestCycleInstance.currentStage
+ * @param {number} harvestCycleInstance.harvestReadinessPercentage - persisted, 0-100
+ *
+ * @param {Object} variety - row from CropVariety
  * @param {number} variety.yieldPerAcre
  */
-function calculateYieldEstimation(crop, variety) {
+function calculateYieldEstimation(crop, harvestCycleInstance, variety) {
   const today = new Date();
-
+  console.log('variety',variety)
   // STEP 1: Base Yield
   const baseYield = variety.yieldPerAcre * crop.cultivatedAreaInAcre;
 
   let baseMin = baseYield * 0.9;
   let baseMax = baseYield * 1.1;
 
-  console.log("baseMin,baseMax",baseMin,baseMax);
+  console.log("baseMin,baseMax", baseMin, baseMax);
 
   // STEP 2: Lifecycle Progress
-  const totalDays = daysBetween(crop.sowingDate, crop.estdHarvestDate); 
-  console.log(totalDays);
-  const elapsedDays = daysBetween(crop.sowingDate, today);
-  console.log(crop.sowingDate,today,elapsedDays);
+  // Reading the persisted readiness % instead of recomputing from dates,
+  // to stay in sync with computeHarvestReadiness and avoid a second,
+  // possibly-diverging progress calculation.
+  let progressRatio = clamp(
+    (harvestCycleInstance.harvestReadinessPercentage || 0) / 100,
+    0,
+    1
+  );
 
+  console.log("progressRatio (from persisted readiness)", progressRatio);
 
-  let progressRatio = totalDays > 0 ? elapsedDays / totalDays : 0;
-  progressRatio = clamp(progressRatio, 0, 1);
-
-  console.log("progressRatio",progressRatio)
-
-  // Stage cap
-  const stageCap = getStageCap(crop.currentStage);
+  // Stage cap — CONFIRMED not applied inside HarvestReadinessPercentage,
+  // so this is a genuine additional constraint, not redundant.
+  const currentStage = harvestCycleInstance.currentStage || crop.currentStage;
+  const stageCap = getStageCap(currentStage);
   progressRatio = Math.min(progressRatio, stageCap);
-  console.log("progressRatio after stage cap",progressRatio)
-
+  console.log("progressRatio after stage cap", progressRatio);
 
   // STEP 3: Apply Progress Scaling
   let adjustedMin = baseMin * progressRatio;
   let adjustedMax = baseMax * progressRatio;
 
-  console.log("adjustedMin,adjustedMax",adjustedMin,adjustedMax)
+  console.log("adjustedMin,adjustedMax", adjustedMin, adjustedMax);
+
   // STEP 4: Health Reduction
   const reduction = getHealthReduction(crop.healthStatus);
   adjustedMin = adjustedMin * (1 - reduction);
   adjustedMax = adjustedMax * (1 - reduction);
 
-  console.log("adjustedMin,adjustedMax after reduction",adjustedMin,adjustedMax)
-
+  console.log("adjustedMin,adjustedMax after reduction", adjustedMin, adjustedMax);
 
   // STEP 5: Delay Penalty (optional)
-  if (today > new Date(crop.estdHarvestDate)) {
+  if (harvestCycleInstance.estdHarvestDate && today > new Date(harvestCycleInstance.estdHarvestDate)) {
     adjustedMin *= 0.9;
     adjustedMax *= 0.9;
   }
 
-  console.log("adjustedMin,adjustedMax delay",adjustedMin,adjustedMax)
-
+  console.log("adjustedMin,adjustedMax delay", adjustedMin, adjustedMax);
 
   // STEP 6: Confidence
   let confidence = "LOW";
@@ -97,7 +112,7 @@ function calculateYieldEstimation(crop, variety) {
     confidence = "MEDIUM";
   }
 
-  console.log("confidence",confidence)
+  console.log("confidence", confidence);
 
   return {
     estimatedYieldMin: Math.round(adjustedMin), // kg per acre
@@ -110,37 +125,41 @@ function calculateYieldEstimation(crop, variety) {
 usage
 const crop = {
   cultivatedAreaInAcre: 0.75,
-  sowingDate: "2026-01-04",
+  healthStatus: "MINOR",
+  currentStage: "FRUIT",
+};
+
+const harvestCycleInstance = {
+  startDate: "2026-01-04",
   estdHarvestDate: "2026-04-06",
   currentStage: "FRUIT",
-  healthStatus: "MINOR",
+  harvestReadinessPercentage: 78.5,
 };
 
 const variety = {
   yieldPerAcre: 3200,
 };
 
-const result = calculateYieldEstimation(crop, variety);
+const result = calculateYieldEstimation(crop, harvestCycleInstance, variety);
 console.log(result);
 */
 
 // --------------
-/*
-[
-  { factor: "Lifecycle Progress", status: "GOOD", message: "Crop is in fruiting stage." },
-  { factor: "Health Condition", status: "WARNING", message: "Minor health issues recorded." }
-]
-*/
 
-
-const computeYieldFactors = (crop) => {
+/**
+ * @param {Object} crop - row from Crop
+ * @param {Object} harvestCycleInstance - row from HarvestCycleInstance
+ */
+const computeYieldFactors = (crop, harvestCycleInstance) => {
   const today = new Date();
   const factors = [];
 
-  // 1. Lifecycle Progress Factor
-  const totalDays = daysBetween(crop.sowingDate, crop.estdHarvestDate);
-  const elapsedDays = daysBetween(crop.sowingDate, today);
-  const progressRatio = totalDays > 0 ? elapsedDays / totalDays : 0;
+  // 1. Lifecycle Progress Factor — reading persisted readiness %, same as above.
+  const progressRatio = clamp(
+    (harvestCycleInstance.harvestReadinessPercentage || 0) / 100,
+    0,
+    1
+  );
 
   if (progressRatio < 0.5) {
     factors.push({
@@ -181,8 +200,8 @@ const computeYieldFactors = (crop) => {
     message: healthFactor.message,
   });
 
-  // 3.Stage Delay Factor
-  if (today > new Date(crop.estdHarvestDate)) {
+  // 3. Stage Delay Factor
+  if (harvestCycleInstance.estdHarvestDate && today > new Date(harvestCycleInstance.estdHarvestDate)) {
     factors.push({
       factor: "Harvest Delay",
       status: "WARNING",
@@ -196,7 +215,7 @@ const computeYieldFactors = (crop) => {
     });
   }
 
-  // 4.Area Sufficiency Factor
+  // 4. Area Sufficiency Factor
   if (crop.cultivatedAreaInAcre < 0.25) {
     factors.push({
       factor: "Cultivated Area",
@@ -212,52 +231,9 @@ const computeYieldFactors = (crop) => {
   }
 
   return factors;
-}
-
-/** 
- * 
- * const crop = {
-  cultivatedAreaInAcre: 0.75,
-  sowingDate: "2026-01-04",
-  estdHarvestDate: "2026-04-06",
-  currentStage: "FRUIT",
-  healthStatus: "MINOR",
 };
-
-const variety = {
-  yieldPerAcre: 3200,
-};
-
-const factors = computeYieldFactors(crop, variety);
-console.log(factors);
-
-[
-  {
-    "factor": "Lifecycle Progress",
-    "status": "GOOD",
-    "message": "Crop is near harvest stage."
-  },
-  {
-    "factor": "Health Condition",
-    "status": "WARNING",
-    "message": "Minor health issues recorded."
-  },
-  {
-    "factor": "Harvest Schedule",
-    "status": "GOOD",
-    "message": "Harvest timeline is on track."
-  },
-  {
-    "factor": "Cultivated Area",
-    "status": "GOOD",
-    "message": "Cultivated area is sufficient for expected output."
-  }
-]
-*/
-
 
 module.exports = {
   calculateYieldEstimation,
-  computeYieldFactors
-
+  computeYieldFactors,
 };

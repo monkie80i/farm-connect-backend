@@ -3,6 +3,7 @@ const {
   toCamelCaseObject,
   addDate,getTodayDate
 } = require("../utils/utlis");
+const { getUserById } = require("../services/user.service");
 const { successResponse, errorResponse, notFound} = require("../responses/api.responses");
 
 
@@ -62,6 +63,28 @@ const getFarmerDashboard = (req, res) => {
   }
 };
 
+const listFarmerFarms = (req,res) => {
+  try {
+    const userId = Number(req.params.userId);
+
+    const user = getUserById(userId);
+
+    if(!user) { 
+      return notFound(res,"User Not Found");
+    }
+
+    const stmnt = 'SELECT * FROM Farm WHERE UserId = ?';
+    const result = toCamelCaseObject(db.prepare(stmnt).all(userId));
+
+    return successResponse(res,result);
+
+  } catch (error) {
+    console.log("listFarmerFarms", error);
+    return errorResponse(res,"Something went wrong!",500,error.toString());
+  }
+};
+
 module.exports = {
-  getFarmerDashboard
+  getFarmerDashboard,
+  listFarmerFarms
 };

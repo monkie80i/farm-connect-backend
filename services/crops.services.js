@@ -1,6 +1,9 @@
 const db = require("../db");
 const { log } = require("./logger.services");
 const { toCamelCaseObject, getFutureDateISO,getPastDateISO } = require("../utils/utlis");
+const { calculateYieldEstimation } = require("./yeild-est.services");
+
+
 const FULL_STAGE_SEQUENCE = [
   "LAND",
   "SOW",
@@ -44,6 +47,7 @@ const HARV_CODE = 'HARW'
  * @property {string} [description] - Description of the stage.
  */
 
+
 /**
  * @typedef {"LAND"|"SOW"|"GERM"|"GROW"|"FLOW"|"FRUIT"|"MAT"|"HARW"|"DORM"} CropStageCode
  */
@@ -60,6 +64,52 @@ const HARV_CODE = 'HARW'
  * @property {Object} statement - The prepared statement that was executed.
  */
 
+/**
+ * @typedef {"ACTIVE"|"COMPLETED"|"SKIPPED"} HarvestCycleStatus
+ */
+
+/**
+ * @typedef {Object} HarvestCycleInstance
+ * @property {number} id - The unique identifier.
+ * @property {number} cropId - The crop ID.
+ * @property {number} cropLifecycleDefinitionId - The lifecycle definition ID.
+ * @property {string} [cycleLabel] - Label for the cycle, e.g. "2026" or "2026-27".
+ * @property {ISODate} [startDate] - Date when tracking for this cycle begins.
+ * @property {CropStageCode} [currentStage] - The current crop stage.
+ * @property {HarvestCycleStatus} status - The current status of the harvest cycle.
+ * @property {number} harvestReadinessInd - Indicates whether the crop is harvest-ready (0 or 1).
+ * @property {number} [harvestReadinessPercentage] - Harvest readiness percentage.
+ * @property {ISODate} [estdHarvestDate] - Estimated harvest date, used for caching.
+ * @property {number} [actualYield] - Actual yield from the harvest.
+ * @property {string} [harvestNote] - Notes related to the harvest.
+ * @property {string} [createdDate] - Date and time when the record was created.
+ * @property {string} [updatedDate] - Date and time when the record was last updated.
+ */
+
+/**
+ * @typedef {Object} HealthProgressSummary
+ * @property {string} currentStatus - The current health status.
+ * @property {string} title - The summary title.
+ * @property {string} summary - A summary of the crop's health progress.
+ */
+
+
+/**
+ * @typedef {Object} YieldAndHarvest
+ * @property {boolean} isHarvested - Whether the crop has been harvested.
+ * @property {ISODate|null} estimatedHarvestDate - The estimated harvest date.
+ * @property {Object} estimatedYield - Estimated yield details.
+ * @property {ISODate|null} actualHarvestDate - The actual harvest date.
+ * @property {number} actualYield - The actual harvested yield.
+ */
+
+/**
+ * @typedef {Object} HarvestSummary
+ * @property {number} currentId - The ID of the current harvest cycle.
+ * @property {string} estHarvDate - The estimated harvest date.
+ * @property {number} actualYield - The actual harvested yield.
+ * @property {HarvestCycleInstance} harvestCycle - harvest cycle instance
+ */
 
 /** Types End */
 const getFullStageSeq = () => structuredClone(FULL_STAGE_SEQUENCE);
@@ -714,12 +764,184 @@ const onGoingCropLifeCycleInstanceCreate = (
 };
 
 
+/**
+ * @param {number} cropId 
+ * 
+ * @returns {HarvestSummary}
+ */
+const getCropHarvestSummary = (cropId) => {
+  const cycles = toCamelCaseObject(db
+    .prepare('SELECT * FROM HarvestCycleInstance WHERE CropId = ? ORDER BY CreatedDate ASC')
+    .all(cropId))
+  ;
+  // there can be a crop with 1 full cycle
+  // there can be a crop with 1 est and 1 rec cycle
+  // there can be a crop with 1 est and more than 1 rec cycles
+
+  // this is the current running cycle
+  const curr = cycles.findLast(p => new Date(p.startDate) <= new Date) || cycles[0];
+
+
+  console.log("curr",curr)
+  console.log("cycles",cycles)
+  // this is the latest reccuring cylce or full cycle
+  const recentRecurring = cycles.findLast(c => c.estdHarvestDate !== null); // which is the most recent harvest cycles
+  console.log(recentRecurring)
+  const estHarvDate = recentRecurring.estdHarvestDate;
+  const actualYield = recentRecurring.actualYield; // ok to be null
+  
+  const summary = {
+    currentId: curr.id,
+    harvestCycle: recentRecurring,
+    estHarvDate, // string
+    actualYield // number
+  }
+
+  return summary;
+};
+
+/**
+ * 
+ * @param {number} harvestCycleInstanceId 
+ * 
+ * @returns {HealthProgressSummary}
+ */
+const getHealthSummary = (harvestCycleInstanceId) => {
+  if(!harvestCycleInstanceId || Number(harvestCycleInstanceId) === NaN) {
+    throw new Error('Error getHealthSummary: harvestCycleInstanceId invalid!');
+  }
+
+  const healthProgressSummary = {
+    currentStatus: DEFAULT_HEALTH_STATUS,
+    title: null,
+    summary: null
+  }
+
+  const healthLogs = toCamelCaseObject(
+    db
+    .prepare('SELECT * FROM CropHealthLog WHERE HarvestCycleInstanceId = ? ORDER BY CreatedDate ASC')
+    .all(harvestCycleInstanceId)
+  );
+
+  if(healthLogs.length === 0) return healthProgressSummary;
+
+  const severeiteis = healthLogs.map(log => log.severity);
+  const severitiesCountMap = Object.entries(
+    severeiteis.reduce((acc, value) => {
+      acc[value] = (acc[value] ?? 0) + 1;
+      return acc;
+    }, {})
+  );
+
+  const summaryDescription = '';
+  severitiesCountMap.some((value,index,arr) => {
+    summaryDescription += `${value[0]} ${value[1]}`;
+    if(index === arr.length-1) {
+      summaryDescription += '.';
+    } else if (index === arr.length-2) {
+      summaryDescription += ' and ';
+    } else {
+      summaryDescription += ', ';
+    }
+  })
+
+  if(healthLogs.length !== 0) {
+    const lastLog = healthLogs[healthLogs.length-1];
+    healthProgressSummary.currentStatus = lastLog.severity;
+    healthProgressSummary.title = lastLog.title;
+    healthProgressSummary.summary = summaryDescription;
+  } 
+
+  return healthProgressSummary;
+}
+
+
+/**
+ * 
+ * @param {number} harvestCycleInstanceId 
+ * 
+ * @returns {Object}
+ */
+const getCropListingSummary = (harvestCycleInstanceId) => {
+
+  const produce = toCamelCaseObject(
+    db
+    .prepare('SELECT * FROM Produce WHERE HarvestCycleInstanceId = ?')
+    .get(harvestCycleInstanceId)
+  );
+
+  const summary = {
+    listngStatus: 'Inactive',
+    listngId: 0,
+  }
+
+  if(produce) {
+    const listing = toCamelCaseObject(
+      db
+      .prepare('SELECT * FROM CropListing WHERE ProduceId = ?')
+      .get(produce.id)
+    );
+
+    if(listing) {
+      summary.listngStatus = 'Active';
+      summary.listngId = listing.id;
+    }
+  }
+
+  return summary
+}
+
+/**
+ * 
+ * @param {Object} crop 
+ * @param {number} harvestCycleId 
+ * @param {number} yield 
+ * @param {*} estdHarvestDate 
+ * 
+ * @returns {YieldAndHarvest}
+ */
+const cropYieldSummary = (crop,harvestCycleInstance,yield,estdHarvestDate) => {
+  
+  const yieldNHarvest = {
+    isharvested: false,
+    estimatedHarvestDate: null,
+    estimatedYeild: {},
+    actualHarvestDate: null,
+    actualYeild: 0
+  }
+
+  const harvStage = toCamelCaseObject(db
+    .prepare('SELECT * FROM CropStages WHERE HarvestCycleInstanceId=? AND StageName=? ')
+    .get(harvestCycleInstance.id,HARV_CODE)
+  );
+  if(harvStage) {
+    yieldNHarvest.isharvested = true;
+    yieldNHarvest.actualHarvestDate = harvStage.observedDate;
+    yieldNHarvest.actualYeild = yield;
+  } else {
+    const variety = toCamelCaseObject(db
+      .prepare('SELECT * FROM CropVariety WHERE Id = ?')
+      .get(crop.varietyId)
+    )
+    yieldNHarvest.estimatedHarvestDate = estdHarvestDate;
+    yieldNHarvest.estimatedYeild = calculateYieldEstimation(crop,harvestCycleInstance,variety);
+  }
+
+  return yieldNHarvest;
+}
+
+
 
 module.exports = {
   createCropBasic,
   onGoingCropLifeCycleInstanceCreate,
   newPlantingCropLifeCycleInstanceCreate,
   setCropGrowthDuration,
+  HARV_CODE,
+  getHealthSummary,
+  getCropListingSummary,
+  getCropHarvestSummary,
+  cropYieldSummary,
   // for testing
   getStageMeanDays,
   createHarvestLifecycleInstance,

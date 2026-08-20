@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getFarmerDashboard } = require('../controllers/farmer.controller');
+const { getFarmerDashboard, listFarmerFarms } = require('../controllers/farmer.controller');
 const {
     getFarmerCrops,
     getCropDetails,
@@ -76,6 +76,16 @@ router.post('/crop/harvest/:cropId', markCropAsHarvested); // tested working
 
 router.get('/crops/lifecycle/:cropId', getCropLifecycle); // tested working
 
+/**
+ * get crop timeline
+ * 
+ * it get the crops life cycle instnce
+ * if instance, get definition stages, for missing lifecycle stages in , 
+ * add in estimation starting from the final stage, adding min to min and max to max
+ * 
+ * 
+ */
+
 router.post('/crops/lifecycle-stage-observed/:cropId', cropLifecycleStageObserved); // tested working
 
 router.get('/crops-health-logs/:cropId',cropHealthLogs); // tested working
@@ -139,6 +149,8 @@ router.get('/negotiation-history/:negotiationId', listNegotiationHistory); // te
 router.post('/negotiation-accept/:negoHistId', accepNegotiation); // tested working
 
 router.post('/generate-reports', genFarmerReports);
+
+router.get('/farms/:userId',listFarmerFarms);
 
 
 module.exports = router;
