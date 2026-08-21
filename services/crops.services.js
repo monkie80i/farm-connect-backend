@@ -108,6 +108,7 @@ const HARV_CODE = 'HARW'
  * @property {number} currentId - The ID of the current harvest cycle.
  * @property {string} estHarvDate - The estimated harvest date.
  * @property {number} actualYield - The actual harvested yield.
+ * @property {Array} cycles
  * @property {HarvestCycleInstance} harvestCycle - harvest cycle instance
  */
 
@@ -781,18 +782,15 @@ const getCropHarvestSummary = (cropId) => {
   // this is the current running cycle
   const curr = cycles.findLast(p => new Date(p.startDate) <= new Date) || cycles[0];
 
-
-  console.log("curr",curr)
-  console.log("cycles",cycles)
   // this is the latest reccuring cylce or full cycle
   const recentRecurring = cycles.findLast(c => c.estdHarvestDate !== null); // which is the most recent harvest cycles
-  console.log(recentRecurring)
   const estHarvDate = recentRecurring.estdHarvestDate;
   const actualYield = recentRecurring.actualYield; // ok to be null
   
   const summary = {
     currentId: curr.id,
     harvestCycle: recentRecurring,
+    cycles: cycles.map(p => ({code:p.id,description:p.cycleLabel})),
     estHarvDate, // string
     actualYield // number
   }
@@ -819,13 +817,20 @@ const getHealthSummary = (harvestCycleInstanceId) => {
 
   const healthLogs = toCamelCaseObject(
     db
-    .prepare('SELECT * FROM CropHealthLog WHERE HarvestCycleInstanceId = ? ORDER BY CreatedDate ASC')
+    .prepare(`
+      SELECT 
+      Title,
+      Severity,
+      S.Description AS SeverityDesc
+      FROM CropHealthLog CHL 
+      LEFT JOIN HealthLogSeverityLov S ON CHL.Severity = S.Code 
+      WHERE HarvestCycleInstanceId = ? ORDER BY CreatedDate ASC`)
     .all(harvestCycleInstanceId)
   );
 
   if(healthLogs.length === 0) return healthProgressSummary;
 
-  const severeiteis = healthLogs.map(log => log.severity);
+  const severeiteis = healthLogs.map(log => log.severityDesc);
   const severitiesCountMap = Object.entries(
     severeiteis.reduce((acc, value) => {
       acc[value] = (acc[value] ?? 0) + 1;
@@ -833,7 +838,7 @@ const getHealthSummary = (harvestCycleInstanceId) => {
     }, {})
   );
 
-  const summaryDescription = '';
+  let summaryDescription = '';
   severitiesCountMap.some((value,index,arr) => {
     summaryDescription += `${value[0]} ${value[1]}`;
     if(index === arr.length-1) {

@@ -18,7 +18,8 @@ const {
     cropHealthLogs,
     createHealthLog,
     editCropHealthLog,
-    deleteHealthlog
+    deleteHealthlog,
+    cropHealthLogsSearch,
 } = require('../controllers/health-log-controllers');
 
 const {
@@ -76,19 +77,10 @@ router.post('/crop/harvest/:cropId', markCropAsHarvested); // tested working
 
 router.get('/crops/lifecycle/:cropId', getCropLifecycle); // tested working
 
-/**
- * get crop timeline
- * 
- * it get the crops life cycle instnce
- * if instance, get definition stages, for missing lifecycle stages in , 
- * add in estimation starting from the final stage, adding min to min and max to max
- * 
- * 
- */
 
 router.post('/crops/lifecycle-stage-observed/:cropId', cropLifecycleStageObserved); // tested working
 
-router.get('/crops-health-logs/:cropId',cropHealthLogs); // tested working
+router.get('/crops-health-logs/:cropId',cropHealthLogsSearch); // tested working
 
 router.post('/crops-health-logs/:cropId', createHealthLog); // tested working
 
