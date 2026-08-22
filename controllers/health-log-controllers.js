@@ -27,8 +27,6 @@ const cropHealthLogsSearch = (req, res) => {
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
 
-    console.log("cropId",cropId)
-
     const allowedFields = [ 
       'harvestCycleInstanceId','severity'
     ];
@@ -49,8 +47,6 @@ const cropHealthLogsSearch = (req, res) => {
     params.push(cropId);
 
     const whereClause = whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}`: "";
-
-    console.log(whereClause);
 
     const  txn = db.transaction(() => {
       const start = new Date();
@@ -81,7 +77,6 @@ const cropHealthLogsSearch = (req, res) => {
       ${whereClause} LIMIT ? OFFSET ?;
       `;
 
-      console.log(stmnt)
       const result = db.prepare(stmnt).all(...params,pageSize, offset);
 
       // Get total count for pagination
@@ -117,7 +112,6 @@ const createHealthLog = (req, res) => {
     // tested working
   try {
     const cropId = Number(req.params.cropId);
-    console.log(cropId);
     const { title, harvestCycleInstanceId, description, date, severity, imagePath } = req.body;
 
     const stmnt = db.prepare(`

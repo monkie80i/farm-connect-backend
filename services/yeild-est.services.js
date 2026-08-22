@@ -55,14 +55,14 @@ function getHealthReduction(healthStatus) {
  */
 function calculateYieldEstimation(crop, harvestCycleInstance, variety) {
   const today = new Date();
-  console.log('variety',variety)
+  // console.log('variety',variety)
   // STEP 1: Base Yield
   const baseYield = variety.yieldPerAcre * crop.cultivatedAreaInAcre;
 
   let baseMin = baseYield * 0.9;
   let baseMax = baseYield * 1.1;
 
-  console.log("baseMin,baseMax", baseMin, baseMax);
+  // console.log("baseMin,baseMax", baseMin, baseMax);
 
   // STEP 2: Lifecycle Progress
   // Reading the persisted readiness % instead of recomputing from dates,
@@ -74,27 +74,27 @@ function calculateYieldEstimation(crop, harvestCycleInstance, variety) {
     1
   );
 
-  console.log("progressRatio (from persisted readiness)", progressRatio);
+  // console.log("progressRatio (from persisted readiness)", progressRatio);
 
   // Stage cap — CONFIRMED not applied inside HarvestReadinessPercentage,
   // so this is a genuine additional constraint, not redundant.
   const currentStage = harvestCycleInstance.currentStage || crop.currentStage;
   const stageCap = getStageCap(currentStage);
   progressRatio = Math.min(progressRatio, stageCap);
-  console.log("progressRatio after stage cap", progressRatio);
+  // console.log("progressRatio after stage cap", progressRatio);
 
   // STEP 3: Apply Progress Scaling
   let adjustedMin = baseMin * progressRatio;
   let adjustedMax = baseMax * progressRatio;
 
-  console.log("adjustedMin,adjustedMax", adjustedMin, adjustedMax);
+  // console.log("adjustedMin,adjustedMax", adjustedMin, adjustedMax);
 
   // STEP 4: Health Reduction
   const reduction = getHealthReduction(crop.healthStatus);
   adjustedMin = adjustedMin * (1 - reduction);
   adjustedMax = adjustedMax * (1 - reduction);
 
-  console.log("adjustedMin,adjustedMax after reduction", adjustedMin, adjustedMax);
+  // console.log("adjustedMin,adjustedMax after reduction", adjustedMin, adjustedMax);
 
   // STEP 5: Delay Penalty (optional)
   if (harvestCycleInstance.estdHarvestDate && today > new Date(harvestCycleInstance.estdHarvestDate)) {
@@ -102,7 +102,7 @@ function calculateYieldEstimation(crop, harvestCycleInstance, variety) {
     adjustedMax *= 0.9;
   }
 
-  console.log("adjustedMin,adjustedMax delay", adjustedMin, adjustedMax);
+  // console.log("adjustedMin,adjustedMax delay", adjustedMin, adjustedMax);
 
   // STEP 6: Confidence
   let confidence = "LOW";
@@ -112,7 +112,7 @@ function calculateYieldEstimation(crop, harvestCycleInstance, variety) {
     confidence = "MEDIUM";
   }
 
-  console.log("confidence", confidence);
+  // console.log("confidence", confidence);
 
   return {
     estimatedYieldMin: Math.round(adjustedMin), // kg per acre

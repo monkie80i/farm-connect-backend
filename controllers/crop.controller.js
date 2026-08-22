@@ -159,7 +159,6 @@ const getCropDetails = (req, res) => {
     crop["healthProgressSummary"] = getHealthSummary(currentInstanceId);
     crop['listingSummary'] = getCropListingSummary(currentInstanceId);
     crop['timeLine']  = buildCropTimeline(cropId);
-    console.log("cycles",cycles)
     crop['cycles'] = cycles;
 
     // Yield and harvest

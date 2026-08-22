@@ -1,4 +1,5 @@
 const db = require('../db');
+const { toCamelCaseObject, getFutureDateISO,getPastDateISO } = require("../utils/utlis");
 
 function addDays(date, days) {
   const d = new Date(date);
@@ -30,8 +31,12 @@ function getObservedStagesMap(harvestCycleInstanceId) {
 }
 
 /**
- * Resolves one HarvestCycleInstance into an ordered list of stage entries
- * (no `order` field yet — that's assigned once segments are merged).
+ * Resolves one HarvestCycleInstance into an ordered list of RAW stage
+ * entries — each still carrying its resolved `date` (Date object, not yet
+ * formatted, no estStartDate/estEndDate yet). Cross-segment `next` stitching
+ * happens later, once all segments are flattened together, so a segment's
+ * last stage can correctly see into the next segment.
+ *
  * Anchoring rule: once an observed/backfilled date is hit, later estimates
  * re-anchor off that real date rather than compounding drift from StartDate.
  */
@@ -41,8 +46,7 @@ function resolveCycleStageEntries(cycleInstance) {
 
   let anchorDate = cycleInstance.StartDate ? new Date(cycleInstance.StartDate) : null;
 
-  // Pass 1: resolve one date per stage (actual or projected midpoint).
-  const resolved = stageDefs.map((stageDef) => {
+  return stageDefs.map((stageDef) => {
     const observed = observedMap.get(stageDef.Stage);
 
     if (observed) {
@@ -69,28 +73,6 @@ function resolveCycleStageEntries(cycleInstance) {
       date: projected,
     };
   });
-
-  // Pass 2: derive estStartDate/estEndDate windows for unobserved stages.
-  return resolved.map((entry, idx) => {
-    if (entry.isObserved) {
-      return {
-        stage: entry.stage,
-        estStartDate: null,
-        estEndDate: null,
-        observedDate: entry.observedDate,
-        observationType: entry.observationType,
-      };
-    }
-
-    const next = resolved[idx + 1];
-    return {
-      stage: entry.stage,
-      estStartDate: toISODate(entry.date),
-      estEndDate: next ? toISODate(next.date) : null,
-      observedDate: null,
-      observationType: null,
-    };
-  });
 }
 
 function getRelevantCycleInstances(cropId, growthDurationType) {
@@ -113,8 +95,6 @@ function getRelevantCycleInstances(cropId, growthDurationType) {
       LIMIT 1
     `).get({ cropId });
 
-    // Establishment first, then latest recurring — order here drives the
-    // final `order` numbering below.
     return [establishment, latestRecurring].filter(Boolean);
   }
 
@@ -136,7 +116,7 @@ function getRelevantCycleInstances(cropId, growthDurationType) {
  * (concatenated, not nested) for PERENNIAL.
  *
  * @param {number} cropId
- * @returns {object|null} null if the crop doesn't exist.
+ * @returns {object} { cropId, growthDurationType, stages }
  */
 function buildCropTimeline(cropId) {
   const crop = db.prepare(`
@@ -146,16 +126,60 @@ function buildCropTimeline(cropId) {
     WHERE c.Id = @cropId
   `).get({ cropId });
 
-  if (!crop) return null; // throw proper error
+  if (!crop) {
+    throw new Error('buildCropTimeline: crop does not exist');
+  }
 
   const cycleInstances = getRelevantCycleInstances(cropId, crop.GrowthDurationType);
 
-  const flatEntries = cycleInstances.flatMap(resolveCycleStageEntries);
+  // Resolve each segment independently (dates only), then flatten so that
+  // "next" below can see across the establishment -> recurring boundary.
+  const flatResolved = cycleInstances.flatMap(resolveCycleStageEntries);
 
-  const stages = flatEntries.map((entry, idx) => ({
-    order: idx + 1,
-    ...entry,
-  }));
+  // Terminal fallback: if the very last stage of the whole timeline is
+  // unobserved, use the last cycle instance's cached EstdHarvestDate instead
+  // of leaving estEndDate null.
+  const lastInstance = cycleInstances[cycleInstances.length - 1];
+  const terminalFallbackDate = lastInstance?.EstdHarvestDate
+    ? new Date(lastInstance.EstdHarvestDate)
+    : null;
+
+    const stages = flatResolved.map((entry, idx) => {
+    const order = idx + 1;
+
+    if (entry.isObserved) {
+      return {
+        order,
+        stage: entry.stage,
+        estStartDate: null,
+        estEndDate: null,
+        observedDate: entry.observedDate,
+        observationType: entry.observationType,
+      };
+    }
+
+    const next = flatResolved[idx + 1];
+
+    let endDate;
+    if (next) {
+      endDate = next.date;
+    } else if (entry.stage === 'DORM') {
+      // Dormancy is open-ended by design — no cycle-end date to fall back
+      // to until the cron creates the next RECURRING instance.
+      endDate = null;
+    } else {
+      endDate = terminalFallbackDate;
+    } 
+
+    return {
+      order,
+      stage: entry.stage,
+      estStartDate: toISODate(entry.date),
+      estEndDate: endDate ? toISODate(endDate): null,
+      observedDate: null,
+      observationType: null,
+    };
+  });
 
   return { cropId: crop.Id, growthDurationType: crop.GrowthDurationType, stages };
 }
