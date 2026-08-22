@@ -5,17 +5,6 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-// Unchanged — CropStageCaps schema didn't change.
-function getStageCap(stageCode) {
-  const capRows = db.prepare(`SELECT StageName,Cap FROM CropStageCaps;`).all();
-  const caps = capRows.reduce((acc, row) => {
-    acc[row.StageName] = row.Cap;
-    return acc;
-  }, {});
-
-  return caps[stageCode] || 1.0;
-}
-
 // HealthStatusLov: CRIT, HARV, HLTY, MINOR, RISK
 function getHealthReduction(healthStatus) {
   const reductions = {
@@ -23,11 +12,9 @@ function getHealthReduction(healthStatus) {
     MINOR: 0.05,
     RISK: 0.15,
     CRIT: 0.30,
-    // HARV = crop already harvested. Yield at this point should reflect
-    // ActualYield (on HarvestCycleInstance), not an estimate — so no
-    // reduction is applied here, but the caller probably shouldn't be
-    // calling calculateYieldEstimation for a harvested cycle at all.
-    // Flagging rather than guessing — want your call on this before I bake it in.
+    // HARV is intercepted earlier in calculateYieldEstimation (early return
+    // using ActualYield) — this function should no longer be reached with
+    // HARV in practice, but kept as a safe default rather than throwing.
     HARV: 0.0,
   };
 
@@ -39,70 +26,75 @@ function getHealthReduction(healthStatus) {
  *
  * Expects camelCase objects (i.e. already passed through toCamelCaseObject).
  *
+ * If the cycle is already harvested (Status === 'COMPLETED' or stage is
+ * HARV), this returns the actual recorded yield instead of computing an
+ * estimate — an estimate at that point would be fiction; ActualYield is
+ * the authoritative number.
+ *
  * @param {Object} crop - row from Crop
  * @param {number} crop.cultivatedAreaInAcre
  * @param {string} crop.healthStatus
  * @param {string} [crop.currentStage] - fallback if the cycle doesn't have one
  *
  * @param {Object} harvestCycleInstance - row from HarvestCycleInstance
+ * @param {string} harvestCycleInstance.status
  * @param {string} harvestCycleInstance.startDate
  * @param {string} harvestCycleInstance.estdHarvestDate
  * @param {string} harvestCycleInstance.currentStage
  * @param {number} harvestCycleInstance.harvestReadinessPercentage - persisted, 0-100
+ * @param {number} [harvestCycleInstance.actualYield]
  *
  * @param {Object} variety - row from CropVariety
  * @param {number} variety.yieldPerAcre
  */
 function calculateYieldEstimation(crop, harvestCycleInstance, variety) {
+  const currentStage = harvestCycleInstance.currentStage || crop.currentStage;
+
+  // STEP 0: Already-harvested short-circuit — no estimation, just the fact.
+  if (
+    harvestCycleInstance.status === "COMPLETED" ||
+    currentStage === "HARV"
+  ) {
+    const actual = harvestCycleInstance.actualYield ?? null;
+    return {
+      estimatedYieldMin: actual,
+      estimatedYieldMax: actual,
+      confidenceLevel: actual != null ? "ACTUAL" : "UNKNOWN",
+    };
+  }
+
   const today = new Date();
-  // console.log('variety',variety)
+
   // STEP 1: Base Yield
   const baseYield = variety.yieldPerAcre * crop.cultivatedAreaInAcre;
 
   let baseMin = baseYield * 0.9;
   let baseMax = baseYield * 1.1;
 
-  // console.log("baseMin,baseMax", baseMin, baseMax);
-
   // STEP 2: Lifecycle Progress
   // Reading the persisted readiness % instead of recomputing from dates,
   // to stay in sync with computeHarvestReadiness and avoid a second,
   // possibly-diverging progress calculation.
-  let progressRatio = clamp(
+  const progressRatio = clamp(
     (harvestCycleInstance.harvestReadinessPercentage || 0) / 100,
     0,
     1
   );
 
-  // console.log("progressRatio (from persisted readiness)", progressRatio);
-
-  // Stage cap — CONFIRMED not applied inside HarvestReadinessPercentage,
-  // so this is a genuine additional constraint, not redundant.
-  const currentStage = harvestCycleInstance.currentStage || crop.currentStage;
-  const stageCap = getStageCap(currentStage);
-  progressRatio = Math.min(progressRatio, stageCap);
-  // console.log("progressRatio after stage cap", progressRatio);
-
   // STEP 3: Apply Progress Scaling
   let adjustedMin = baseMin * progressRatio;
   let adjustedMax = baseMax * progressRatio;
-
-  // console.log("adjustedMin,adjustedMax", adjustedMin, adjustedMax);
 
   // STEP 4: Health Reduction
   const reduction = getHealthReduction(crop.healthStatus);
   adjustedMin = adjustedMin * (1 - reduction);
   adjustedMax = adjustedMax * (1 - reduction);
 
-  // console.log("adjustedMin,adjustedMax after reduction", adjustedMin, adjustedMax);
-
   // STEP 5: Delay Penalty (optional)
   if (harvestCycleInstance.estdHarvestDate && today > new Date(harvestCycleInstance.estdHarvestDate)) {
     adjustedMin *= 0.9;
     adjustedMax *= 0.9;
   }
-
-  // console.log("adjustedMin,adjustedMax delay", adjustedMin, adjustedMax);
 
   // STEP 6: Confidence
   let confidence = "LOW";
@@ -111,8 +103,6 @@ function calculateYieldEstimation(crop, harvestCycleInstance, variety) {
   } else if (progressRatio >= 0.5) {
     confidence = "MEDIUM";
   }
-
-  // console.log("confidence", confidence);
 
   return {
     estimatedYieldMin: Math.round(adjustedMin), // kg per acre
@@ -130,6 +120,7 @@ const crop = {
 };
 
 const harvestCycleInstance = {
+  status: "ACTIVE",
   startDate: "2026-01-04",
   estdHarvestDate: "2026-04-06",
   currentStage: "FRUIT",

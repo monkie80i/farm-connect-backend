@@ -1,61 +1,74 @@
+const { toCamelCaseObject } = require("../utils/utlis");
+
+const HARVEST_STAGE_CODE = 'HARW'; // no IsHarvestStage column exists; hardcoded per confirmed lov code
+
 /**
  * computeHarvestReadiness
  * ------------------------
  * Computes HarvestReadinessPercentage and HarvestReadinessInd for a single
- * HarvestCycleInstance, based on elapsed stage progress vs. expected stage
- * durations (midpoint of Min/MaxDurationDays per stage).
+ * HarvestCycleInstance.
  *
- * ASSUMPTIONS (adjust column names to match your real schema):
- *  - CropStages has: Id, HarvestCycleInstanceId, StageCode, SequenceOrder,
- *    ActualStartDate, ActualEndDate, EstimatedStartDate, EstimatedEndDate
- *  - CropLifeCycleStages has: StageCode, SequenceOrder, MinDurationDays,
- *    MaxDurationDays, IsHarvestStage (0/1) -- if you don't have IsHarvestStage,
- *    swap the harvestStage lookup for "last stage by SequenceOrder"
+ * MODEL:
+ *  - CropLifeCycleStages defines the ordered template: each stage's
+ *    Min/MaxDaysFromPreviousStage is the expected GAP between the previous
+ *    stage and this one (not "how long this stage lasts").
+ *  - CropStages holds observed reality: exactly one row per
+ *    (HarvestCycleInstanceId, StageName), with ObservedDate marking when
+ *    that stage was reached. (Confirmed: stage codes are unique per
+ *    HarvestCycleInstanceId -- no dedup/collision handling needed.)
+ *  - Progress = how far we've walked through the cumulative expected-gap
+ *    timeline, using ObservedDate where we have it and "today" for the gap
+ *    we're currently sitting inside.
  *
- * This function is read/compute-only -- it does NOT write to the DB.
- * Call updateHarvestReadiness() (below) when you want to persist the result,
- * inside the same transaction as whatever triggered the recompute.
  *
  * @param {import('better-sqlite3').Database} db
  * @param {number} harvestCycleInstanceId
  * @param {object} [opts]
- * @param {number} [opts.readyThresholdPct=90] - percentage at which HarvestReadinessInd flips to 1
+ * @param {number} [opts.readyThresholdPct=90]
  * @returns {{ percentage: number, indicator: number, currentStageCode: string|null }}
  */
 function computeHarvestReadiness(db, harvestCycleInstanceId, opts = {}) {
   const readyThresholdPct = opts.readyThresholdPct ?? 90;
 
-  // 1. Pull all stages for this cycle instance, joined to their expected durations,
-  //    ordered by sequence.
-  const stages = db.prepare(`
-    SELECT
-      cs.Id,
-      cs.StageCode,
-      cs.SequenceOrder,
-      cs.ActualStartDate,
-      cs.ActualEndDate,
-      cs.EstimatedStartDate,
-      cs.EstimatedEndDate,
-      cls.MinDurationDays,
-      cls.MaxDurationDays,
-      cls.IsHarvestStage
-    FROM CropStages cs
-    JOIN HarvestCycleInstance hci ON hci.Id = cs.HarvestCycleInstanceId
-    JOIN CropLifeCycleStages cls
-      ON cls.StageCode = cs.StageCode
-     AND cls.CropLifecycleDefinitionId = hci.CropLifecycleDefinitionId
-    WHERE cs.HarvestCycleInstanceId = @harvestCycleInstanceId
-    ORDER BY cs.SequenceOrder ASC
-  `).all({ harvestCycleInstanceId });
+  const hciRow = db.prepare(`
+    SELECT Id, CropLifecycleDefinitionId, StartDate, Status, CurrentStage
+    FROM HarvestCycleInstance
+    WHERE Id = @harvestCycleInstanceId
+  `).get({ harvestCycleInstanceId });
 
-  if (stages.length === 0) {
-    // No stage data yet -- nothing to compute against.
+  if (!hciRow) {
     return { percentage: 0, indicator: 0, currentStageCode: null };
   }
+  const hci = toCamelCaseObject(hciRow);
 
-  const midpointDuration = (stage) => {
-    const min = stage.MinDurationDays ?? 0;
-    const max = stage.MaxDurationDays ?? min;
+  // 1. Template stages, in order, with expected gap durations.
+  const templateRows = db.prepare(`
+    SELECT Stage, StageOrder, MinDaysFromPreviousStage, MaxDaysFromPreviousStage
+    FROM CropLifeCycleStages
+    WHERE CropLifecycleDefinitionId = @cropLifecycleDefinitionId
+    ORDER BY StageOrder ASC
+  `).all({ cropLifecycleDefinitionId: hci.cropLifecycleDefinitionId });
+
+  if (templateRows.length === 0) {
+    return { percentage: 0, indicator: 0, currentStageCode: null };
+  }
+  const templateStages = templateRows.map(toCamelCaseObject);
+
+  // 2. Observed stage dates for this cycle instance -- one row per stage.
+  const observedRows = db.prepare(`
+    SELECT StageName, ObservedDate
+    FROM CropStages
+    WHERE HarvestCycleInstanceId = @harvestCycleInstanceId
+  `).all({ harvestCycleInstanceId });
+
+  const observedMap = {};
+  for (const row of observedRows.map(toCamelCaseObject)) {
+    observedMap[row.stageName] = row.observedDate;
+  }
+
+  const midpointGap = (stage) => {
+    const min = stage.minDaysFromPreviousStage ?? 0;
+    const max = stage.maxDaysFromPreviousStage ?? min;
     return (min + max) / 2;
   };
 
@@ -63,41 +76,44 @@ function computeHarvestReadiness(db, harvestCycleInstanceId, opts = {}) {
   let totalExpectedDays = 0;
   let elapsedDays = 0;
   let currentStageCode = null;
+  let reachedHarvestStage = false;
 
-  for (const stage of stages) {
-    const expected = midpointDuration(stage);
+  for (let i = 0; i < templateStages.length; i++) {
+    const stage = templateStages[i];
+    const expected = midpointGap(stage);
     totalExpectedDays += expected;
 
-    if (stage.ActualEndDate) {
-      // Completed stage -- full expected credit, regardless of how long it
-      // actually took. (If you want "actual" pace to affect readiness of
-      // later stages, that's a separate signal -- not folded in here.)
+    const observedDate = observedMap[stage.stage];
+
+    if (observedDate) {
+      // This stage has been reached -- full expected credit for the gap
+      // leading into it, regardless of actual pace.
       elapsedDays += expected;
+      if (stage.stage === HARVEST_STAGE_CODE) {
+        reachedHarvestStage = true;
+      }
       continue;
     }
 
-    if (stage.ActualStartDate) {
-      // In-progress stage -- partial credit based on days elapsed so far,
-      // capped at the stage's own expected duration.
-      currentStageCode = stage.StageCode;
-      const start = new Date(stage.ActualStartDate);
+    // Not yet reached. Are we currently inside the gap leading into it?
+    const prevObservedDate = i === 0
+      ? hci.startDate
+      : observedMap[templateStages[i - 1].stage];
+
+    if (prevObservedDate) {
+      currentStageCode = i === 0 ? null : templateStages[i - 1].stage;
+      const start = new Date(prevObservedDate);
       const daysIn = Math.max(0, (today - start) / (1000 * 60 * 60 * 24));
       elapsedDays += Math.min(daysIn, expected);
-      continue;
     }
 
-    // Future stage, not yet started -- 0 credit, and stop walking further
-    // since nothing beyond this point has begun either.
+    // Either way, nothing beyond this point has begun -- stop walking.
     break;
   }
 
   const percentage = totalExpectedDays > 0
     ? Math.min(100, Math.round((elapsedDays / totalExpectedDays) * 10000) / 100)
     : 0;
-
-  const currentStage = stages.find(s => s.StageCode === currentStageCode);
-  const reachedHarvestStage = currentStage?.IsHarvestStage === 1
-    || (!currentStageCode && stages[stages.length - 1]?.ActualEndDate && stages[stages.length - 1]?.IsHarvestStage === 1);
 
   const indicator = (percentage >= readyThresholdPct || reachedHarvestStage) ? 1 : 0;
 
@@ -108,11 +124,8 @@ function computeHarvestReadiness(db, harvestCycleInstanceId, opts = {}) {
  * updateHarvestReadiness
  * ------------------------
  * Computes and persists readiness for a single HarvestCycleInstance.
- * Call this inside the same transaction as the stage-transition write
- * that triggered the recompute.
- *
- * @param {import('better-sqlite3').Database} db
- * @param {number} harvestCycleInstanceId
+ * Call inside the same transaction as the stage-transition write that
+ * triggered the recompute.
  */
 function updateHarvestReadiness(db, harvestCycleInstanceId) {
   const { percentage, indicator } = computeHarvestReadiness(db, harvestCycleInstanceId);
@@ -124,28 +137,27 @@ function updateHarvestReadiness(db, harvestCycleInstanceId) {
     WHERE Id = @harvestCycleInstanceId
   `).run({ percentage, indicator, harvestCycleInstanceId });
 
+  console.log (harvestCycleInstanceId,percentage, indicator );
   return { percentage, indicator };
 }
 
 /**
  * recomputeAllActiveReadiness
  * ------------------------
- * Cron entry point -- sweeps all active HarvestCycleInstance rows and
- * refreshes readiness for time-drift (no new events, but days have passed).
- * Assumes an active cycle has no CompletedDate / Status = 'ACTIVE' -- adjust
- * the WHERE clause to your actual status column.
- *
- * @param {import('better-sqlite3').Database} db
+ * Cron entry point -- sweeps active HarvestCycleInstance rows and refreshes
+ * readiness for time-drift.
  */
 function recomputeAllActiveReadiness(db) {
   const activeCycles = db.prepare(`
     SELECT Id FROM HarvestCycleInstance
     WHERE Status = 'ACTIVE'
-  `).all();
+  `).all().map(toCamelCaseObject);
+
+  console.log('activeCycles', activeCycles)
 
   const runAll = db.transaction((cycles) => {
     for (const cycle of cycles) {
-      updateHarvestReadiness(db, cycle.Id);
+      updateHarvestReadiness(db, cycle.id);
     }
   });
 

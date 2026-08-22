@@ -582,31 +582,56 @@ const cropYieldEstimation = (req, res) => {
     const cropId = Number(req.params.cropId);
     const stmnt = db.prepare(`
       SELECT 
-      SowingDate,CultivatedAreaInAcre,EstdHarvestDate,
-      CurrentStage,HealthStatus,v.YieldPerAcre
-      FROM Crop c JOIN CropVariety v ON c.VarietyId = v.Id WHERE c.Id = ? ;
+        C.Name as CropName,
+        C.ExpectedGrowthDurationDays,
+        C.CultivatedArea,
+        C.CultivatedAreaUnit,
+        C.CultivatedAreaInAcre,
+        C.CultivatedAreaInAcre,
+        C.CurrentStage,
+        C.HealthStatus,
+        V.YieldPerAcre
+      FROM Crop C 
+      LEFT JOIN CropVariety V ON C.VarietyId = V.Id 
+      WHERE C.Id = @cropId
     `);
-    const data = toCamelCaseObject(stmnt.get(cropId));
+
+    // EstdHarvestDate from harvest cycle
+    const data = toCamelCaseObject(stmnt.get({ cropId }));
     console.log(data);
     if (!data) {
       return notFound(res, "Crop Does not Exists");
     }
 
-    crop = { ...data };
-    variety = { yieldPerAcre: JSON.parse(JSON.stringify(data.yieldPerAcre)) };
+    const crop = { ...data };
+    const variety = { yieldPerAcre: data.yieldPerAcre };
     delete crop.yieldPerAcre;
 
-    const yieldEstimate = calculateYieldEstimation(crop, variety);
-    const yieldFactors = computeYieldFactors(crop);
+    const cycles = toCamelCaseObject(
+      db
+      .prepare('SELECT * FROM HarvestCycleInstance WHERE CropId = @cropId ORDER BY CreatedDate ASC')
+      .all({ cropId }))
+    ;
+    const recentRecurring = cycles.findLast(c => c.estdHarvestDate !== null);
+
+    console.log('recentRecurring',recentRecurring)
+    
+    const yieldEstimate = calculateYieldEstimation(crop, recentRecurring ,variety);
+    const yieldFactors = computeYieldFactors(crop,recentRecurring);
+    const timeline = buildCropTimeline(cropId);
+    const harwStage = timeline.stages.find(p=> p.stage === 'HARW');
 
     const result = {
+      ...crop,
+      cycleLabel: recentRecurring.cycleLabel,
+      harwStage,
       ...yieldEstimate,
       yieldFactors,
     };
 
     return successResponse(res, result);
   } catch (error) {
-    console.log("cropsCalender", error);
+    console.log("cropYieldEstimation", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
