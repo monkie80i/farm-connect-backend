@@ -12,7 +12,8 @@ const {
     cropLifecycleStageObserved,
     allCropsCalenders,
     cropCalender,
-    cropYieldEstimation
+    cropYieldEstimation,
+    getCropTimelines,
 } = require('../controllers/crop.controller');
 const {
     cropHealthLogs,
@@ -20,6 +21,7 @@ const {
     editCropHealthLog,
     deleteHealthlog,
     cropHealthLogsSearch,
+    
 } = require('../controllers/health-log-controllers');
 
 const {
@@ -73,10 +75,11 @@ router.put('/crop/:cropId', editCrop); // tested working
 
 router.delete('/crop/:cropId', deleteCrop); // tested working
 
-router.post('/crop/harvest/:cropId', markCropAsHarvested); // tested working
+router.get('/crop/timelines/:cropId', getCropTimelines); // tested working
+
+// router.post('/crop/harvest/:cropId', markCropAsHarvested); // obsolete
 
 router.get('/crops/lifecycle/:cropId', getCropLifecycle); // tested working
-
 
 router.post('/crops/lifecycle-stage-observed/:cropId', cropLifecycleStageObserved); // tested working
 
@@ -143,6 +146,27 @@ router.post('/negotiation-accept/:negoHistId', accepNegotiation); // tested work
 router.post('/generate-reports', genFarmerReports);
 
 router.get('/farms/:userId',listFarmerFarms);
+
+/*
+Name
+Quantity
+AvailabilityDate
+IsNegotiable
+MinimumOrderQuantity
+PricePerUnit
+Unit
+CropTypeName
+CropVarietyName
+FarmerName
+FarmerName
+QualityGrade
+HarvestDate
+Images[{
+    name: 'fileName.png',
+    filePath: '/path/to/file/fileName-798797-.png'
+}]
+*/
+
 
 
 module.exports = router;

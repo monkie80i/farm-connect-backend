@@ -2,7 +2,7 @@ const db = require("../db");
 const { log } = require("./logger.services");
 const { toCamelCaseObject, getFutureDateISO,getPastDateISO } = require("../utils/utlis");
 const { calculateYieldEstimation } = require("./yeild-est.services");
-
+const { updateHarvestReadiness } = require("../services/harvest-readiness.services");
 
 const FULL_STAGE_SEQUENCE = [
   "LAND",
@@ -65,7 +65,7 @@ const HARV_CODE = 'HARW'
  */
 
 /**
- * @typedef {"ACTIVE"|"COMPLETED"|"SKIPPED"} HarvestCycleStatus
+ * @typedef {"NEW"|"WAIT"|"NEXT"|"ACTIVE"|"COMPLETE"} HarvestCycleStatus
  */
 
 /**
@@ -93,7 +93,6 @@ const HARV_CODE = 'HARW'
  * @property {string} summary - A summary of the crop's health progress.
  */
 
-
 /**
  * @typedef {Object} YieldAndHarvest
  * @property {boolean} isHarvested - Whether the crop has been harvested.
@@ -101,15 +100,6 @@ const HARV_CODE = 'HARW'
  * @property {Object} estimatedYield - Estimated yield details.
  * @property {ISODate|null} actualHarvestDate - The actual harvest date.
  * @property {number} actualYield - The actual harvested yield.
- */
-
-/**
- * @typedef {Object} HarvestSummary
- * @property {number} currentId - The ID of the current harvest cycle.
- * @property {string} estHarvDate - The estimated harvest date.
- * @property {number} actualYield - The actual harvested yield.
- * @property {Array} cycles
- * @property {HarvestCycleInstance} harvestCycle - harvest cycle instance
  */
 
 /** Types End */
@@ -223,25 +213,27 @@ const getStageMeanDays = (stage) => {
   return Math.floor(mean);
 };
 
-const createHarvestLifecycleInstance = (cropId,defenitonId,startDate,cycleLabel,estHarvestDate) => {
+const createHarvestLifecycleInstance = (cropId,defenitonId,status,startDate,cycleLabel,estHarvestDate) => {
   const stmnt = `
     INSERT INTO HarvestCycleInstance (
       CropId,
       CropLifecycleDefinitionId,
+      Status,
       StartDate,
       CycleLabel,
       EstdHarvestDate
-    ) VALUES (?,?,?,?,?)
+    ) VALUES (?,?,?,?,?,?)
   `;
 
-  return db.prepare(stmnt).run(cropId,defenitonId,startDate,cycleLabel,estHarvestDate);
+  return db.prepare(stmnt).run(cropId,defenitonId,status,startDate,cycleLabel,estHarvestDate);
 }
 
 const createHarvestCycleNStages = (payload) => {
-  const { cropId, definitionId, startDate, cycleLabel, estHarvDate, cropStages } = payload;
+  const { cropId, definitionId,status, startDate, cycleLabel, estHarvDate, cropStages } = payload;
   const harvestCycleInstance = createHarvestLifecycleInstance(
     cropId,
     definitionId,
+    status,
     startDate,
     cycleLabel,
     estHarvDate
@@ -295,7 +287,7 @@ const backTrackStagesWithMean = (
 ) => {
 
   /** Reordering for safety */
-  const newStages = lifecycleStages.sort((a,b) => a.stageOrder - b.stageOrder);
+  const newStages = [...lifecycleStages].sort((a,b) => a.stageOrder - b.stageOrder);
 
   const currentStage = newStages.find(s => s.stage === currentStageCode);
   if(!currentStage) {
@@ -349,7 +341,7 @@ const forwardTackStagesDays = (lifecycleStages,endCode) => {
     throw new Error('Error forwardTackStagesDays: endCode not in lifecycleStages');
   }
 
-  const newStages = lifecycleStages.sort((a,b) => a.stageOrder - b.stageOrder);
+  const newStages = [...lifecycleStages].sort((a,b) => a.stageOrder - b.stageOrder);
   var days = 0;
 
   newStages.some((stage,index) => {
@@ -472,6 +464,7 @@ const newPlantingCropLifeCycleInstanceCreate = (
 
     /** only for FULL and RECURRING Cycles **/
     let estimatedHarvestDate;
+    let harvCycleStatus;
 
     const lifecycleStages = getLifecycleStagesOfDefinition(definition.id);
     if(lifecycleStages.length === 0) {
@@ -490,6 +483,7 @@ const newPlantingCropLifeCycleInstanceCreate = (
       log(indent+indent,'FULL Phase')
       estimatedHarvestDate = forwardTackStagesDate(lifecycleStages,effectiveStartDate,HARV_CODE,depth+2);
       estimateGrowthDuration = forwardTackStagesDays(lifecycleStages,GROW_CODE);
+      harvCycleStatus = 'NEXT';
       log(indent+indent,'FULL Phase done')
     } else if (definition.phaseType === 'ESTABLISHMENT') {
       log(indent+indent,'ESTABLISHMENT Phase')
@@ -497,10 +491,12 @@ const newPlantingCropLifeCycleInstanceCreate = (
       establishmentCycleEndDate = forwardTackStagesDate(lifecycleStages,effectiveStartDate,lastStageCode,depth+2);
       estimateGrowthDuration = forwardTackStagesDays(lifecycleStages,GROW_CODE);
       estimatedHarvestDate = null;
+      harvCycleStatus = 'NEXT';
       log(indent+indent,'ESTABLISHMENT Phase done')
     } else if (definition.phaseType === 'RECURRING') {
       log(indent+indent,'RECURRING Phase')
       estimatedHarvestDate = forwardTackStagesDate(lifecycleStages,effectiveStartDate,HARV_CODE,depth+2);
+      harvCycleStatus = 'WAIT';
       log(indent+indent,'RECURRING Phase done')
     }
 
@@ -517,6 +513,7 @@ const newPlantingCropLifeCycleInstanceCreate = (
       createHarvestLifecycleInstance(
         newCropId,
         definition.id,
+        harvCycleStatus,
         effectiveStartDate,
         cycleLabel,
         estimatedHarvestDate
@@ -652,6 +649,7 @@ const onGoingCropLifeCycleInstanceCreate = (
       cropId: newCropId,
       definitionId:definition.id,
       startDate: null,
+      status: 'ACTIVE',
       cycleLabel: "",
       estHarvDate: null,
       cropStages: []
@@ -719,6 +717,7 @@ const onGoingCropLifeCycleInstanceCreate = (
           cropId: newCropId,
           definitionId:passedEstablishment.definitionId,
           startDate: null,
+          status:'COMPLETE',
           cycleLabel: "",
           estHarvDate: null,
           cropStages: []
@@ -764,39 +763,77 @@ const onGoingCropLifeCycleInstanceCreate = (
 
 };
 
+const getPriotityCycle =(cycles) => {
+  const firstActive = cycles.find(p => p.status === 'ACTIVE');
+  const lastComplete = cycles.findLast(p => p.status === 'COMPLETE');
+  const firstNext = cycles.find(p => p.status === 'NEXT');
+  const firstWait = cycles.find(p => p.status === 'WAIT');
+
+  const result = firstActive ?? lastComplete ?? firstNext ?? firstWait;
+  return result;
+}
 
 /**
- * @param {number} cropId 
  * 
- * @returns {HarvestSummary}
+ * @param {*} cropId 
+ * 
+ * A harvest cycle will have EstdHarvestDate  not null
+ Harvest cycle stauts is next,wait,active,complete
+ 
+ A crop can have 1 or more harv cycles, 
+ if crop Non Perennial Possiblities- 
+ 1. 1 cycle next (current,harv)
+ 2. 1 cycle active (current,harv)
+ 3. 1 cycle complete (current,harv)
+ 
+ if crop Perennial Possiblities-
+ 1. 2 cycles 1 next (current), 1 wait (harv)-
+ 2. 2 cycles 1 active (current),1 wait (harv)
+ 2. 2 cycles 1 complete (current),1 next (harv)
+ 3. 2 cycles 1 complete (current), 1 next(harv)
+ 4. 2 cycles 1 complete (-), 1 active (current,harv)
+ 5. 3 cycles 1 complete(-), 1 complete(current,harv), 1 next
+ 6. 3 cycles 1 complete(-), 1 complete(-), 1 active (current,harvest)
+ 7. 4 cycles 1 complete(-), 1 complete(-), 1 complete (current,harvest), 1 next
+ 
+ current keeps on travelling
+  if active then that else
+  if no active , last completed is current,
+  if no active or completed, then it first next is current
+ 
+ harvest cycle
+ filter only harv cycles
+ if(active) thats it
+ else if (last completed)
+ esle if next
+ else if wait
+ 
+ goal is to get current cycle, and current harvest cycle, a general rule for Perinnial and non perinnial
+
+ current = firstActive ?? lastComplete ?? firstNext ?? firstWait;
+
+ harvest = firstActive ?? lastComplete ?? firstNext ?? firstWait;
+
+
+ * @returns 
  */
-const getCropHarvestSummary = (cropId) => {
+const getCropImportantCycles = (cropId) => {
   const cycles = toCamelCaseObject(db
-    .prepare('SELECT * FROM HarvestCycleInstance WHERE CropId = ? ORDER BY CreatedDate ASC')
+    .prepare('SELECT * FROM HarvestCycleInstance WHERE CropId = ? ORDER BY Id ASC')
     .all(cropId))
   ;
-  // there can be a crop with 1 full cycle
-  // there can be a crop with 1 est and 1 rec cycle
-  // there can be a crop with 1 est and more than 1 rec cycles
-
-  // this is the current running cycle
-  const curr = cycles.findLast(p => new Date(p.startDate) <= new Date) || cycles[0];
-
-  // this is the latest reccuring cylce or full cycle
-  const recentRecurring = cycles.findLast(c => c.estdHarvestDate !== null); // which is the most recent harvest cycles
-  const estHarvDate = recentRecurring.estdHarvestDate;
-  const actualYield = recentRecurring.actualYield; // ok to be null
+  const harvestCycles = cycles.filter(p => p.estdHarvestDate !== null);
+  const currentCycle = getPriotityCycle(cycles);
+  const harvestCycle = getPriotityCycle(harvestCycles)
   
-  const summary = {
-    currentId: curr.id,
-    harvestCycle: recentRecurring,
-    cycles: cycles.map(p => ({code:p.id,description:p.cycleLabel})),
-    estHarvDate, // string
-    actualYield // number
+  return {
+    currentCycle,
+    harvestCycle
   }
 
-  return summary;
-};
+}
+
+
 
 /**
  * 
@@ -935,6 +972,123 @@ const cropYieldSummary = (crop,harvestCycleInstance,yield,estdHarvestDate) => {
   return yieldNHarvest;
 }
 
+const observeCropStage = (
+  isFinalStage,
+  cropId,
+  stageName,
+  harvestCycleInstanceId,
+  observedDate,
+  harvestCycle,
+  lifecycleStages,
+  lifecycleDefId,
+  actualYield,
+  harvestNote,
+  depth = 0
+) => {
+  const indent = " ".repeat(depth*4);
+  const observationType = 'MANUAL';
+  
+  /** Creating Crop Stage */
+  const result = insertStage(
+    cropId,
+    stageName,
+    harvestCycleInstanceId,
+    observationType,
+    observedDate,
+    depth+1
+  );
+  log(indent,'observeCropStage: Created Crop Stage -', result.lastInsertRowid);
+
+  /** Updating Crop with Current Stage */
+  const cropUpdateStmnt = 'UPDATE Crop SET CurrentStage = @stageName WHERE Id=@cropId';
+  db.prepare(cropUpdateStmnt).run({stageName,cropId});
+  log(indent,'observeCropStage: Updated Crop Current Stage');
+
+  if(isFinalStage) {
+    log(indent,'observeCropStage: Updated Is Final Stage');
+
+    if(harvestCycle['phaseType'] === 'ESTABLISHMENT') {
+      /** To update the start date of the next recurring cycle,
+       * As and ESTABLISHMENT will have atleast 1 RECURRING cycle on init */
+      log(indent,'observeCropStage: is ESTABLISHMENT cycle');
+      const stmnt = `
+        SELECT 
+          H.Id,
+          H.CropLifecycleDefinitionId
+        FROM HarvestCycleInstance H
+        LEFT JOIN CropLifecycleDefinition D ON H.CropLifecycleDefinitionId = D.Id
+        WHERE CropId = @cropId AND D.PhaseType = 'RECURRING'
+      `;
+      const nextRecCycle = toCamelCaseObject(db.prepare(stmnt).get({ cropId }));
+      const recCycleId = nextRecCycle['id'];
+      const recCycleDefId = nextRecCycle['cropLifecycleDefinitionId']; // not null column
+      const recCycleStages = getLifecycleStagesOfDefinition(recCycleDefId); // orderd by StageOrder
+      const gap = getStageMeanDays(recCycleStages[0]);
+      const newStartDate = getFutureDateISO(observedDate,gap);
+      const updStmnt = 'UPDATE HarvestCycleInstance SET StartDate = @newStartDate WHERE Id=@recCycleId';
+      db.prepare(updStmnt).run({ newStartDate, recCycleId });
+      log(indent,'observeCropStage: Updated Start Date of Next recurring Cycle');
+    }
+
+    if(harvestCycle['phaseType'] === 'RECURRING' ) {
+      /** To Create the next Recurring Cycle for the Crop */
+      const firstCycleStage = lifecycleStages.find(p => p["stageOrder"] === 1);
+      const gap = getStageMeanDays(firstCycleStage);
+      const newStartDate = getFutureDateISO(observedDate,gap);
+      const countStmnt = 'SELECT COUNT(*) as count FROM HarvestCycleInstance WHERE CropId=@cropId';
+      const cycleCount = db.prepare(countStmnt).get({ cropId })['count'];
+      const cycleLabel = `${new Date(newStartDate).getFullYear()}-C${cycleCount+1}`;
+      const estHarvDate = forwardTackStagesDate(lifecycleStages,newStartDate,HARV_CODE,depth+1);
+      const row = createHarvestLifecycleInstance(cropId,lifecycleDefId,'NEXT',newStartDate,cycleLabel,estHarvDate);
+      log(indent,'observeCropStage: Created Next Recurring Cycle-',row.lastInsertRowid);
+    }
+  }
+
+  
+  let params = {};
+  const updateSet = [];
+
+  updateSet.push('CurrentStage = @stageName');
+  params = { stageName };
+
+
+  if(stageName === HARV_CODE) {
+    updateSet.push('ActualYield = @actualYield');
+    updateSet.push('HarvestNote = @harvestNote');
+    params = { ...params,actualYield,harvestNote };
+  }
+
+  if(isFinalStage) {
+    const harvestCycleStatus = 'COMPLETE';
+    updateSet.push('Status = @harvestCycleStatus');
+    params = { ...params,harvestCycleStatus };
+
+  } else if (harvestCycle['status'] === 'NEXT') {
+    const activeStatus = 'ACTIVE';
+    updateSet.push('Status = @activeStatus');
+    params = { ...params,activeStatus };
+  }
+
+  console.log('harvestCycle',harvestCycle);
+
+
+  const setExpressions = updateSet.join(', ');
+  const HCIUpdStmnt = `
+    UPDATE HarvestCycleInstance 
+    SET ${setExpressions}
+    WHERE Id = @harvestCycleInstanceId 
+  `;
+
+  log(indent,'observeCropStage: Harvest Cycle Update Statement -',HCIUpdStmnt);
+  db.prepare(HCIUpdStmnt).run({ ...params, harvestCycleInstanceId });
+  log(indent,'observeCropStage: Harvest Cycle Updated.');
+
+  updateHarvestReadiness(db,harvestCycleInstanceId)
+  log(indent,'observeCropStage: Harvest Readiness Updated.');
+
+  return result;
+}
+
 
 
 module.exports = {
@@ -945,16 +1099,17 @@ module.exports = {
   HARV_CODE,
   getHealthSummary,
   getCropListingSummary,
-  getCropHarvestSummary,
   cropYieldSummary,
+  forwardTackStagesDate,
+  observeCropStage,
+  getLifecycleStagesOfDefinition,
+  getCropImportantCycles,
   // for testing
   getStageMeanDays,
   createHarvestLifecycleInstance,
   createHarvestCycleNStages,
-  getLifecycleStagesOfDefinition,
   backTrackStagesWithMean,
   forwardTackStagesDays,
-  forwardTackStagesDate,
   getFullStageSeq,
   getEstStageSeq,
   getRecStageSeq

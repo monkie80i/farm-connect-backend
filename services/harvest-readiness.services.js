@@ -28,6 +28,9 @@ const HARVEST_STAGE_CODE = 'HARW'; // no IsHarvestStage column exists; hardcoded
  * @returns {{ percentage: number, indicator: number, currentStageCode: string|null }}
  */
 function computeHarvestReadiness(db, harvestCycleInstanceId, opts = {}) {
+  // inidcator is not correct
+  // harvest readiness is become 100% only at dorm, which is stupid
+  // redines indicator should be 1 at mat stage observation, then after harves it should go back to 0
   const readyThresholdPct = opts.readyThresholdPct ?? 90;
 
   const hciRow = db.prepare(`
@@ -128,6 +131,7 @@ function computeHarvestReadiness(db, harvestCycleInstanceId, opts = {}) {
  * triggered the recompute.
  */
 function updateHarvestReadiness(db, harvestCycleInstanceId) {
+  // for stages like dorm no need to compute, or handle accrodingly
   const { percentage, indicator } = computeHarvestReadiness(db, harvestCycleInstanceId);
 
   db.prepare(`
@@ -137,7 +141,7 @@ function updateHarvestReadiness(db, harvestCycleInstanceId) {
     WHERE Id = @harvestCycleInstanceId
   `).run({ percentage, indicator, harvestCycleInstanceId });
 
-  console.log (harvestCycleInstanceId,percentage, indicator );
+  console.log ("updateHarvestReadiness cycle:",harvestCycleInstanceId," %:",percentage," ind:", indicator );
   return { percentage, indicator };
 }
 

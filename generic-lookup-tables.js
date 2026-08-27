@@ -25,6 +25,7 @@ const LOVs = [
     "RegionLov",
     "GrowthDurationLov",
     "CropStageObservationTypesLov",
+    "HarvestCycleInstanceStatusLov"
 ];
 
 module.exports = LOVs;

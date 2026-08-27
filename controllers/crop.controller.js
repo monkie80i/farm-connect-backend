@@ -1,11 +1,10 @@
 const db = require("../db");
 const {
   toCamelCaseObject,
-  addDate,
   getTodayDate,
   convertToAcre,
   formatSQLValue,
-  capitalize
+  capitalize,
 } = require("../utils/utlis");
 const {
   successResponse,
@@ -26,12 +25,14 @@ const {
   HARV_CODE,
   getHealthSummary,
   getCropListingSummary,
-  getCropHarvestSummary,
   cropYieldSummary,
+  observeCropStage,
+  getLifecycleStagesOfDefinition,
+  getCropImportantCycles
 } = require("../services/crops.services");
 
 const { log } = require("../services/logger.services");
-const { buildCropTimeline } = require("../services/timeline.services");;
+const { buildCropTimelines, buildCropTimelineNew } = require("../services/timeline.V2.services");
 
 const ALLOWED_PHASE_TYPES = ["FULL", "ESTABLISHMENT", "RECURRING"];
 const FIELD_TO_COLUMN = {
@@ -40,9 +41,8 @@ const FIELD_TO_COLUMN = {
 };
 
 const getFarmerCrops = (req, res) => {
-  // 
+  // tested working
   try {
-
     const userId = Number(req.params.userId);
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
@@ -136,12 +136,13 @@ const getCropDetails = (req, res) => {
         SELECT 
         C.*,
         CT.CropName as CropTypeName,
+        CT.GrowthDurationType,
         V.VarietyName,
         F.Name as FarmName
         FROM Crop C 
-        INNER JOIN CropType CT ON C.CropTypeId = CT.Id
-        INNER JOIN CropVariety V ON C.VarietyId = V.Id
-        INNER JOIN Farm F ON C.FarmId = F.Id
+        LEFT JOIN CropType CT ON C.CropTypeId = CT.Id
+        LEFT JOIN CropVariety V ON C.VarietyId = V.Id
+        LEFT JOIN Farm F ON C.FarmId = F.Id
         WHERE C.Id = ?
       `)
       .get(cropId));
@@ -150,23 +151,14 @@ const getCropDetails = (req, res) => {
       return notFound(res,"Crop not found!" );
     }
 
-
-    const harvestSummary = getCropHarvestSummary(cropId);
-    const currentInstanceId = harvestSummary.currentId;
-    const harvestCycleInstance = harvestSummary.harvestCycle
-    const cycles = harvestSummary.cycles;
-  
-    crop["healthProgressSummary"] = getHealthSummary(currentInstanceId);
-    crop['listingSummary'] = getCropListingSummary(currentInstanceId);
-    crop['timeLine']  = buildCropTimeline(cropId);
-    crop['cycles'] = cycles;
-
-    // Yield and harvest
+    const { currentCycle,harvestCycle } = getCropImportantCycles(cropId);
+    crop['healthProgressSummary'] = getHealthSummary(currentCycle.id);
+    crop['listingSummary'] = getCropListingSummary(currentCycle.id);
     crop['yieldAndHarvest'] = cropYieldSummary(
       crop,
-      harvestCycleInstance,
-      harvestSummary.actualYield,
-      harvestSummary.estHarvDate
+      harvestCycle,
+      harvestCycle.actualYield,
+      harvestCycle.estdHarvestDate
     );
 
     return successResponse(res, toCamelCaseObject(crop));
@@ -400,17 +392,17 @@ const deleteCrop = (req, res) => {
 };
 
 const markCropAsHarvested = (req, res) => {
-  // tested working
+  // Depricated
   try {
     const cropId = Number(req.params.cropId);
     const { harvestNote, actualYield, actualHarvestDate } = req.body;
 
     const stmt = db.prepare(`
-            UPDATE Crop 
-            SET HarvestReadinessInd = 1,
-            HarvestNote = ?, ActualYield = ?, 
-            ActualHarvestDate = ?, CurrentStage = 'HARW'
-            WHERE Id = ?`);
+      UPDATE Crop 
+      SET HarvestReadinessInd = 1,
+      HarvestNote = ?, ActualYield = ?, 
+      ActualHarvestDate = ?, CurrentStage = 'HARW'
+      WHERE Id = ?`);
     const result = stmt.run(
       harvestNote,
       actualYield,
@@ -448,85 +440,176 @@ const getCropLifecycle = (req, res) => {
   }
 };
 
-// after each stage is complete we need to update actual stage dates in cronjob
 
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * 
+ * stage observed is final of est - reset start date of rec
+ * if stage observed is dorm create a rec cyel with start date
+ * @returns 
+ */
 const cropLifecycleStageObserved = (req, res) => {
   // tested working
   try {
     const cropId = Number(req.params.cropId);
-    const { cropStageProgressId, observedDate } = req.body;
+    const { 
+      stageName,
+      harvestCycleInstanceId,
+      observedDate,
+      actualYield,
+      harvestNote
+    } = req.body;
 
-    const today = getTodayDate();
-    if (observedDate > today) {
+    if(stageName === HARV_CODE) {
+      if(!actualYield) {
+        return errorResponse(res,"Invalid: actualYield is required for Harvest",400);
+      }
+
+      if(!harvestNote) {
+        return errorResponse(res,"Invalid: harvestNote is required for Harvest",400);
+      }
+    }
+
+    const today = getTodayDate(); // ISO
+    // commented only for testing
+    // if (observedDate > today) {
+    //   return errorResponse(res,"Invalid: observedDate cannot be in the future",400);
+    // }
+
+    /** Get Harvest Cycle */
+    const harvestCycle = toCamelCaseObject(
+      db.prepare(`
+        SELECT 
+          H.CropId,
+          H.CropLifecycleDefinitionId,
+          H.StartDate,
+          H.Status,
+          D.PhaseType
+        FROM HarvestCycleInstance H
+        LEFT JOIN CropLifecycleDefinition D ON H.CropLifecycleDefinitionId = D.Id
+        WHERE H.Id = ?
+      `).get(harvestCycleInstanceId)
+    );
+
+    if(!harvestCycle) {
+      return errorResponse(res,"Invalid: harvest cycle invalid",400);
+    }
+
+    if(harvestCycle['cropId'] !== cropId) {
+      return errorResponse(res,"Invalid: harvest Cycle and Crop Id doesn't match!",400);
+    }
+
+    /** Get elapsed CropStags for the Harvest Cycle */
+    const stagesStmnt = `SELECT * FROM CropStages WHERE HarvestCycleInstanceId = ? ORDER BY Id ASC`;
+    const stages = toCamelCaseObject(db.prepare(stagesStmnt).all(harvestCycleInstanceId));
+
+    const stageAlreadyExists = stages.find(p => p["stageName"]===stageName);
+    if(stageAlreadyExists) {
+      return errorResponse(res,"Invalid: stage alreay exists!",400);
+    }
+    
+    const lastStage = stages.length > 0 ? stages[stages.length-1] : null;
+    if(lastStage) {
+      /** ISO Dates are orderd Lexographically,
+       * So simple conditional checks like this work as long they are 
+       * both ISODate or both ISODateTimes */
+      if(lastStage['observedDate'] > observedDate) {
+        return errorResponse(
+          res,
+          `Invalid: observe date is before the prev stage date ${lastStage['observedDate']}`
+          ,400
+        );
+      }
+    } else {
+      if(harvestCycle['startDate'] > observedDate ) {
+        return errorResponse(res,`Invalid: observe date is before the cycle start date ${harvestCycle['startDate']}`,400);
+      }
+    }
+
+    const lifecycleDefId = harvestCycle['cropLifecycleDefinitionId'];
+    if(!lifecycleDefId) {
+      /** This is internal error as we somehow created a harvest cycle without a proper definition */
       return errorResponse(
         res,
-        "Invalid Date: Obsered Date cannot be in the future",
+        "Internal Error: lifecycle definition Id on Harvest Cycle invalid",
         400,
       );
     }
 
-    const getCropStageStmnt = db.prepare(`
-      SELECT * FROM CropStageProgress WHERE Id = ?;
-    `);
-    const curntProgState = toCamelCaseObject(
-      getCropStageStmnt.get(cropStageProgressId),
-    );
-
-    if (!curntProgState || curntProgState.cropId !== cropId) {
-      return notFound(res, "Crop Stage Not Found");
-    }
-
-    if (curntProgState.stageOrder > 1) {
-      const prevStageStmnt = db.prepare(`
-        SELECT * FROM CropStageProgress WHERE CropId = ? AND StageOrder = ?;
-      `);
-      const prevStage = prevStageStmnt.get(
-        cropId,
-        curntProgState.stageOrder - 1,
+    const lifecycleStages = getLifecycleStagesOfDefinition(lifecycleDefId);
+    const stageToBeObserved = lifecycleStages.find(p => p.stage === stageName);
+    if(!stageToBeObserved) {
+      return errorResponse(
+        res,
+        "Invalid: Stage doesn't exist on Life Cycle",
+        400,
       );
-      let isValid = false;
+    }
 
-      if (prevStage.actualStartDate) {
-        isValid = prevStage.actualStartDate < observedDate;
-      } else {
-        isValid = prevStage.estStartDate < observedDate;
+    /** If stage to be observed is not the First Order */
+    if(stageToBeObserved["stageOrder"] !== 1) {
+      const prevCycleStage = lifecycleStages
+        .find(p => p.stageOrder === (stageToBeObserved["stageOrder"]-1))
+      ;
+
+      if(!lastStage) {
+        return errorResponse(res,"Invalid: This stage cannot be the first stage by cycle definiton",400);
       }
 
-      if (!isValid) {
-        return errorResponse(
-          res,
-          "Invalid Date: Inconsitent with previous stages.",
-          400,
-        );
+      if(lastStage["stageName"] !== prevCycleStage['stage'])  {
+        return errorResponse(res,"Invalid: Wrong Stage Order",400);
       }
     }
 
-    const updateCropStageTansaction = db.transaction(() => {
-      const stmnt1 = db.prepare(`UPDATE CropStageProgress 
-        SET ActualStartDate = ? 
-        WHERE Id = ?`);
+    const maxOrder = lifecycleStages.map(p => p['stageOrder']).sort((a,b) => (b-a))[0];
+    const isFinalStage = stageToBeObserved["stageOrder"] === maxOrder;
 
-      stmnt1.run(observedDate, cropStageProgressId);
+    const txn = db.transaction(() => {
+      const result = observeCropStage(isFinalStage,
+        cropId,
+        stageName,
+        harvestCycleInstanceId,
+        observedDate,
+        harvestCycle,
+        lifecycleStages,
+        lifecycleDefId,
+        actualYield,
+        harvestNote,
+        1
+      )
 
-      if (curntProgState.stageOrder > 2) {
-        const prevStageorder = curntProgState.stageOrder - 1;
-
-        const stmnt2 = db.prepare(`
-        UPDATE CropStageProgress 
-        SET ActualEndDate = ? 
-        WHERE CropId = ? AND StageOrder = ?;
-      `);
-        stmnt2.run(observedDate, cropId, prevStageorder);
-      }
+      // throw new Error('_ROLL_BACK_');
+      return result.lastInsertRowid;
     });
 
-    updateCropStageTansaction();
-    return successResponse(res);
+    const stageId = txn();
+
+    return successResponse(res,stageId);
+
   } catch (error) {
     console.log("cropLifecycleStageObserved", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
+
+const getCropTimelines = (req, res) => {
+  try {
+    const cropId = Number(req.params.cropId);
+
+    if(!cropExists(cropId)) {
+      return notFound(res,'Crop Does not Exist!');
+    }
+
+    const timelines = buildCropTimelines(cropId)
+
+    return successResponse(res,timelines);
+  } catch (error) {
+    console.log("cropLifecycleStageObserved", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+}
 
 const allCropsCalenders = (req, res) => {
   try {
@@ -598,7 +681,6 @@ const cropYieldEstimation = (req, res) => {
 
     // EstdHarvestDate from harvest cycle
     const data = toCamelCaseObject(stmnt.get({ cropId }));
-    console.log(data);
     if (!data) {
       return notFound(res, "Crop Does not Exists");
     }
@@ -607,23 +689,15 @@ const cropYieldEstimation = (req, res) => {
     const variety = { yieldPerAcre: data.yieldPerAcre };
     delete crop.yieldPerAcre;
 
-    const cycles = toCamelCaseObject(
-      db
-      .prepare('SELECT * FROM HarvestCycleInstance WHERE CropId = @cropId ORDER BY CreatedDate ASC')
-      .all({ cropId }))
-    ;
-    const recentRecurring = cycles.findLast(c => c.estdHarvestDate !== null);
-
-    console.log('recentRecurring',recentRecurring)
-    
-    const yieldEstimate = calculateYieldEstimation(crop, recentRecurring ,variety);
-    const yieldFactors = computeYieldFactors(crop,recentRecurring);
-    const timeline = buildCropTimeline(cropId);
+    const { harvestCycle } = getCropImportantCycles(cropId);
+    const yieldEstimate = calculateYieldEstimation(crop,harvestCycle,variety);
+    const yieldFactors = computeYieldFactors(crop,harvestCycle);
+    const timeline = buildCropTimelineNew(harvestCycle);
     const harwStage = timeline.stages.find(p=> p.stage === 'HARW');
 
     const result = {
       ...crop,
-      cycleLabel: recentRecurring.cycleLabel,
+      cycleLabel: harvestCycle.cycleLabel,
       harwStage,
       ...yieldEstimate,
       yieldFactors,
@@ -671,8 +745,9 @@ const getCropVarieityById = (id) => {
   return db.prepare(`SELECT * FROM CropVariety WHERE Id = ?`).get(id);
 };
 
-const getCropStageCapById = (id) => {
-  return db.prepare(`SELECT * FROM CropStageCaps WHERE Id = ?`).get(id);
+const cropExists = (id) => {
+  const count = db.prepare(`SELECT Count(Id) as count FROM Crop WHERE Id = ?`).get(id);
+  return count.count === 1;
 };
 
 const updateCropType = (req, res) => {
@@ -1535,5 +1610,5 @@ module.exports = {
   getCropStageCap,
   updateCropStageCap,
   deleteCropStageCap,
-
+  getCropTimelines
 };
