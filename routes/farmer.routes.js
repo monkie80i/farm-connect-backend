@@ -7,7 +7,7 @@ const {
     cropInitializer,
     editCrop,
     deleteCrop,
-    markCropAsHarvested,
+    // markCropAsHarvested,
     getCropLifecycle,
     cropLifecycleStageObserved,
     allCropsCalenders,
@@ -27,6 +27,7 @@ const {
 const {
     cropListings,
     createCropListing,
+    detailCropListing,
     editCropListing,
     deleteCropListing,
 } = require('../controllers/listing.controller');
@@ -61,10 +62,6 @@ const { genFarmerReports } = require("../controllers/reports.controller");
 
 router.get('/dashboard/:userId', getFarmerDashboard); // tested working
 
-router.get('/health-alerts/:userId', (req,res) => {
-    // get health alerts for farmers
-});
-
 router.get('/crops/:userId', getFarmerCrops); // tested working
 
 router.post('/crops/:userId', cropInitializer); // tested working
@@ -96,16 +93,19 @@ router.get('/crops-calender/:userId', allCropsCalenders); // tested working
 router.get('/crop-calender/:cropId', cropCalender); // tested working
 
 router.get('/crop-yeild-estimate/:cropId', cropYieldEstimation); // tested working
+// --------------------------------------------------------------------
 
 router.get('/listings/:userId', cropListings); // tested working
 
-router.post('/listings/:cropId', createCropListing ); // tested working
+router.post('/listings', createCropListing ); // tested working
 
-router.get('/listing/:listingId', () => {});
+router.get('/listing/:listingId', detailCropListing); 
 
-router.put('/listing/:listingId', editCropListing); // tested working
+router.patch('/listing/:listingId', editCropListing);
 
-router.delete('/listing/:listingId', deleteCropListing); // tested working
+// router.delete('/listing/:listingId', deleteCropListing); // deferred
+
+// -------------------------------------------------------
 
 router.get('/groups', searchGroupListings); // tested working
 
@@ -147,26 +147,8 @@ router.post('/generate-reports', genFarmerReports);
 
 router.get('/farms/:userId',listFarmerFarms);
 
-/*
-Name
-Quantity
-AvailabilityDate
-IsNegotiable
-MinimumOrderQuantity
-PricePerUnit
-Unit
-CropTypeName
-CropVarietyName
-FarmerName
-FarmerName
-QualityGrade
-HarvestDate
-Images[{
-    name: 'fileName.png',
-    filePath: '/path/to/file/fileName-798797-.png'
-}]
-*/
-
-
+router.get('/health-alerts/:userId', (req,res) => {
+    // get health alerts for farmers
+});
 
 module.exports = router;

@@ -459,7 +459,8 @@ const cropLifecycleStageObserved = (req, res) => {
       harvestCycleInstanceId,
       observedDate,
       actualYield,
-      harvestNote
+      harvestNote,
+      qualityGrade,
     } = req.body;
 
     if(stageName === HARV_CODE) {
@@ -469,6 +470,10 @@ const cropLifecycleStageObserved = (req, res) => {
 
       if(!harvestNote) {
         return errorResponse(res,"Invalid: harvestNote is required for Harvest",400);
+      }
+
+      if(!qualityGrade) {
+        return errorResponse(res,"Invalid: qualityGrade is required for Harvest",400);
       }
     }
 
@@ -577,6 +582,7 @@ const cropLifecycleStageObserved = (req, res) => {
         lifecycleDefId,
         actualYield,
         harvestNote,
+        qualityGrade,
         1
       )
 
@@ -832,16 +838,6 @@ const createCropVarieities = (req, res) => {
       notes,
       isActive,
     } = req.body;
-
-    console.log(cropTypeId,
-      varietyName,
-      maturityMinDays,
-      maturityMaxDays,
-      yieldPerAcre,
-      shelfLifeDays,
-      isHybrid,
-      notes,
-      isActive)
 
     const cropVarieities = db
       .prepare(

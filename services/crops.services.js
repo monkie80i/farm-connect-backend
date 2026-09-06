@@ -983,6 +983,7 @@ const observeCropStage = (
   lifecycleDefId,
   actualYield,
   harvestNote,
+  qualityGrade,
   depth = 0
 ) => {
   const indent = " ".repeat(depth*4);
@@ -1069,9 +1070,6 @@ const observeCropStage = (
     params = { ...params,activeStatus };
   }
 
-  console.log('harvestCycle',harvestCycle);
-
-
   const setExpressions = updateSet.join(', ');
   const HCIUpdStmnt = `
     UPDATE HarvestCycleInstance 
@@ -1082,12 +1080,66 @@ const observeCropStage = (
   log(indent,'observeCropStage: Harvest Cycle Update Statement -',HCIUpdStmnt);
   db.prepare(HCIUpdStmnt).run({ ...params, harvestCycleInstanceId });
   log(indent,'observeCropStage: Harvest Cycle Updated.');
-
-  updateHarvestReadiness(db,harvestCycleInstanceId)
+  updateHarvestReadiness(db,harvestCycleInstanceId);
   log(indent,'observeCropStage: Harvest Readiness Updated.');
+
+  if(stageName === HARV_CODE) {
+    createProduce(
+      cropId,
+      harvestCycleInstanceId,
+      actualYield,
+      qualityGrade,
+      observedDate,
+      depth+1
+    );
+    log(indent,'observeCropStage:Produce Created');
+  }
 
   return result;
 }
+
+const createProduce = (cropId,harvestCycleInstanceId,qty,qualityGrade,harvDate,depth=0) => {
+  const indent = " ".repeat(depth*4);
+
+  const stmnt = `SELECT * FROM Crop WHERE Id=?`;
+  const crop =  toCamelCaseObject(db.prepare(stmnt).get(cropId));
+
+  if(!crop) {
+    throw new Error('createProduce: crop not found, Id:', cropId);
+  }
+
+  const cropTypeId = crop.cropTypeId;
+  const farmerId = crop.farmerId;
+
+  const insProduceStmnt = `
+    INSERT INTO Produce (
+      CropId,
+      FarmerId,
+      CropTypeId,
+      HarvestCycleInstanceId,
+      Quantity,
+      QualityGrade,
+      HarvestDate,
+      RemainingQuantity
+    )
+    VALUES (?,?,?,?,?,?,?,?)`;
+
+  log(indent,`INSERT INTO Produce(${cropId},${farmerId},${cropTypeId},${harvestCycleInstanceId},${qty},${qualityGrade},${harvDate})`)
+
+  return db
+    .prepare(insProduceStmnt)
+    .run(
+      cropId,
+      farmerId,
+      cropTypeId,
+      harvestCycleInstanceId,
+      qty,
+      qualityGrade,
+      harvDate,
+      qty, // initially remaining qty is harv qty
+    )
+  ;
+};
 
 
 

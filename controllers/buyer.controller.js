@@ -56,76 +56,90 @@ const getBuyerDashboard = (req, res) => {
 
 const marketPlaceSearch = (req, res) => {
   try {
-    const userId = Number(req.params.userId);
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    const { cropTypeId, cropVarietyId, sortBy, listingFilter } = req.query;
+    const { sortBy } = req.query;
 
-    const results = db.prepare(`
-      SELECT
-          'CROP' AS ListingType,
-          cl.Id AS ListingId,
-          cl.CropId,
-          ct.CropName,
-          cv.VarietyName,
-          cl.AvailableQuantity AS Quantity,
-          cl.PricePerUnit,
-          cl.Unit,
-          cl.AvailabilityDate,
-          cl.IsNegotiable,
-          cl.MinimumOrderQuantity,
-          NULL AS GroupName,
-          NULL AS GroupStatus,
-          NULL AS NumberOfParticipants,
-          cl.CreatedDate,
-          cl.UpdatedDate
-      FROM CropListing cl
-      JOIN Crop c ON c.Id = cl.CropId
-      JOIN CropType ct ON ct.Id = c.CropTypeId
-      LEFT JOIN CropVariety cv ON cv.Id = c.VarietyId
-      WHERE
-          (:cropTypeId IS NULL OR c.CropTypeId = :cropTypeId)
-          AND (:cropVarietyId IS NULL OR c.VarietyId = :cropVarietyId)
-          AND (:listingFilter = 'ALL' OR :listingFilter = 'INDIVIDUAL')
-      UNION ALL
-      SELECT
-          'GROUP' AS ListingType,
-          gl.Id AS ListingId,
-          gl.CropId,
-          ct.CropName,
-          cv.VarietyName,
-          gl.TotalRequiredQuantity AS Quantity,
-          gl.PricePerUnit,
-          gl.Unit,
-          gl.GroupAvailabilityDate AS AvailabilityDate,
-          NULL AS IsNegotiable,
-          gl.MinRequiredQuantity AS MinimumOrderQuantity,
-          gl.Name AS GroupName,
-          gl.Status AS GroupStatus,
-          gl.NumberOfParticipants,
-          gl.CreatedDate,
-          gl.UpdatedDate
-      FROM GroupListing gl
-      JOIN Crop c ON c.Id = gl.CropId
-      JOIN CropType ct ON ct.Id = c.CropTypeId
-      LEFT JOIN CropVariety cv ON cv.Id = c.VarietyId
-      WHERE
-          gl.Status = 'OPEN'
-          AND (:cropTypeId IS NULL OR c.CropTypeId = :cropTypeId)
-          AND (:cropVarietyId IS NULL OR c.VarietyId = :cropVarietyId)
-          AND (:listingFilter = 'ALL' OR :listingFilter = 'GROUP')
-      ORDER BY
-          CASE WHEN :sortBy = 'UpdatedDate' THEN UpdatedDate ELSE CreatedDate END DESC
-      LIMIT :limit OFFSET :offset
-    `).all({
-      cropTypeId: cropTypeId || null,     
-      cropVarietyId: cropVarietyId || null,
-      listingFilter: listingFilter || 'ALL',
-      sortBy: sortBy || 'CreatedDate',
-      limit: pageSize,
-      offset: offset
-    });
+    const sortByOptions = [
+      'CREATED_DESC', // newest first
+      'PRICE_ASC', // Price: Low to High
+      'PRICE_DESC', // Price: High to Low
+      'QTY_DESC', // Quantity high to low
+    ];
+    if(!sortBy || !sortByOptions.includes(sortBy)) sortBy = 'CREATED_DESC';
+
+    const allowedInput = [
+      'cropTypeId',
+      'cropVarietyId',
+      'qualityGrade',
+    ]
+    const colName = {
+      'cropTypeId': 'C.CropTypeId',
+      'cropVarietyId': 'C.VarietyId',
+      'qualityGrade': 'P.QualityGrade',
+    };
+    const whereCondtions = [];
+    const params = [];
+
+    for (const key of allowedInput) {
+      if(key in req.query) {
+        if(req.query[key] !== null && req.query[key].toString().trim() !== "") {
+          whereCondtions.push(`${colName[key]}=?`);
+          params.push(req.query[key]);
+        }
+      }
+    }
+
+    const orderByClauseMap = {
+      'CREATED_DESC': 'CL.CreatedDate ASC',
+      'PRICE_ASC': 'CL.PricePerUnit ASC',
+      'PRICE_DESC': 'CL.PricePerUnit DESC',
+      'QTY_DESC': 'CL.RemainingQuantity DESC',
+    }
+
+    const whereClause = whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}`: "";
+
+
+    /**
+     * Missin on Crop Listing
+     * Images
+     * Lisitng Name
+     */
+
+    const stmnt = `
+      SELECT 
+        CL.Id,
+        CL.Name,
+        CL.ImagePath
+        CL.IsNegotiable,
+        CL.AvailabilityDate,
+        CL.MinimumOrderQuantity,
+        CL.PricePerUnit,
+        CL.Status,
+        CL.RemainingQuantity,
+        CL.CreatedDate,
+        P.QualityGrade,
+        CT.CropName AS CropTypeName,
+        V.Name AS CropVarietyName,
+        FA.FirstName as FarmerFirstName,
+        FA.LastName as FarmerLastName
+      FROM CropListing CL
+      LEFT JOIN ProduceId P ON CL.ProduceId = P.Id
+      LEFT JOIN Crop C ON P.CropId = C.Id
+      LEFT JOIN CropType CT ON C.CropTypeId = CT.Id
+      LEFT JOIN CropVariety V ON C.VarietyId = V.Id
+      LEFT JOIN Farm F ON C.FarmId = F.Id
+      LEFT JOIN User FA ON C.FarmerId = FA.Id
+      ${whereClause} 
+      ORDER BY ${orderByClauseMap[sortBy]}
+      LIMIT ? OFFSET ?
+    `;
+
+    const results = toCamelCaseObject(db
+      .prepare(stmnt)
+      .all(...params,pageSize,offset)
+    );
 
     return successResponse(res, toCamelCaseObject(results));
   } catch (error) {

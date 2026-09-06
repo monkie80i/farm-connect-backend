@@ -1,0 +1,27 @@
+
+DROP TABLE CropListing;
+
+CREATE TABLE IF NOT EXISTS CropListing (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ProduceId INTEGER NOT NULL,
+    Name NVARCHAR(250) NOT NULL,
+    Description TEXT NOT NULL,
+    ImagePath TEXT NOT NULL,
+    ListedQuantity FLOAT NOT NULL,
+    RemainingQuantity FLOAT NOT NULL,
+    Status NVARCHAR(10) DEFAULT 'ACTIVE' NOT NULL,
+    AvailabilityDate DATE NOT NULL,
+    IsNegotiable INTEGER DEFAULT 0,
+    MinimumOrderQuantity FLOAT NOT NULL,
+    PricePerUnit FLOAT NOT NULL,
+    Unit NVARCHAR(10),
+    CreatedUser INTEGER,
+    UpdatedUser INTEGER,
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdatedDate DATETIME,
+    FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
+    FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
+    FOREIGN KEY (ProduceId) REFERENCES Produce(Id) ON DELETE RESTRICT,
+    FOREIGN KEY (Unit) REFERENCES CropUnitLov(Code) ON DELETE SET NULL,
+    FOREIGN KEY (Status) REFERENCES ListingStatusLov(Code) ON DELETE RESTRICT
+);
