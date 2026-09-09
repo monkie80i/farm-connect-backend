@@ -14,6 +14,7 @@ const {
     cropCalender,
     cropYieldEstimation,
     getCropTimelines,
+    farmerProduceListByCrop,
 } = require('../controllers/crop.controller');
 const {
     cropHealthLogs,
@@ -93,6 +94,8 @@ router.get('/crops-calender/:userId', allCropsCalenders); // tested working
 router.get('/crop-calender/:cropId', cropCalender); // tested working
 
 router.get('/crop-yeild-estimate/:cropId', cropYieldEstimation); // tested working
+
+router.get('/produces',farmerProduceListByCrop); // tested working
 // --------------------------------------------------------------------
 
 router.get('/listings/:userId', cropListings); // tested working

@@ -16,7 +16,7 @@ const fileUploadController = (req, res) => {
 
     return successResponse(res, { fileUrl, originalName: req.file.originalname });
   } catch (error) {
-    console.log("createOrderDispute", error);
+    console.log("fileUploadController", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };

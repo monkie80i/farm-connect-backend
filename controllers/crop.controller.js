@@ -28,7 +28,8 @@ const {
   cropYieldSummary,
   observeCropStage,
   getLifecycleStagesOfDefinition,
-  getCropImportantCycles
+  getCropImportantCycles,
+  listProduce
 } = require("../services/crops.services");
 
 const { log } = require("../services/logger.services");
@@ -1571,6 +1572,20 @@ const deleteCropStageCap = (req, res) => {
   }
 };
 
+const farmerProduceListByCrop = (req,res) => {
+  try {
+    const {farmerId, cropId} = req.query;
+
+    const result = listProduce(farmerId,cropId);
+    return successResponse(res, result);
+    
+  } catch (error) {
+    console.log("farmerProduceListByCrop", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+
 module.exports = {
   getFarmerCrops,
   getCropDetails,
@@ -1606,5 +1621,6 @@ module.exports = {
   getCropStageCap,
   updateCropStageCap,
   deleteCropStageCap,
-  getCropTimelines
+  getCropTimelines,
+  farmerProduceListByCrop
 };

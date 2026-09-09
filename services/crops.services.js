@@ -1142,6 +1142,31 @@ const createProduce = (cropId,harvestCycleInstanceId,qty,qualityGrade,harvDate,d
 };
 
 
+const listProduce = (farmerId,cropId) => {
+  if(!farmerId) {
+    throw new Error('listProduce: Farmer Id invalid');
+  }
+  if(!cropId) {
+    throw new Error('listProduce: Crop Id invalid');
+  }
+
+  const stmnt = `
+    SELECT 
+      P.*,
+      HCL.CycleLabel
+    FROM Produce P
+    LEFT JOIN HarvestCycleInstance HCL ON P.HarvestCycleInstanceId = HCL.Id
+    WHERE P.FarmerId = @farmerId AND P.CropId = @cropId
+  `;
+
+  return toCamelCaseObject(
+    db
+    .prepare(stmnt)
+    .all({ farmerId, cropId})
+  );
+}
+
+
 
 module.exports = {
   createCropBasic,
@@ -1164,5 +1189,6 @@ module.exports = {
   forwardTackStagesDays,
   getFullStageSeq,
   getEstStageSeq,
-  getRecStageSeq
+  getRecStageSeq,
+  listProduce
 };

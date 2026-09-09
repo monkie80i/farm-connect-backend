@@ -27,7 +27,7 @@ const cropListings = (req, res) => {
     const fieldPrefix = {
       'cropName': 'C',
       'cropTypeId': 'C',
-      'listingStatus': 'CL',
+      'status': 'CL',
     }
 
     const whereCondtions = [];
@@ -69,7 +69,26 @@ const cropListings = (req, res) => {
     `);
     const result = toCamelCaseObject(stmnt.all(...params,pageSize, offset));
 
-    return successResponse(res, result);
+    const countStmnt = db.prepare(
+        `SELECT COUNT(DISTINCT CL.Id) as total 
+        FROM CropListing CL
+        LEFT JOIN Produce P ON CL.ProduceId = P.Id
+        LEFT JOIN Crop C ON P.CropId = C.Id
+        ${whereClause}`,
+      );
+    const { total } = countStmnt.get(...params);
+
+    const final = {
+        data: result,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      }
+
+    return successResponse(res, final);
   } catch (error) {
     console.log("cropListings", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
