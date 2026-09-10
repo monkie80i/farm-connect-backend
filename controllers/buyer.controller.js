@@ -59,15 +59,16 @@ const marketPlaceSearch = (req, res) => {
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    const { sortBy } = req.query;
+    let { orderBy } = req.query;
 
-    const sortByOptions = [
+    const orderByOptions = [
       'CREATED_DESC', // newest first
       'PRICE_ASC', // Price: Low to High
       'PRICE_DESC', // Price: High to Low
       'QTY_DESC', // Quantity high to low
     ];
-    if(!sortBy || !sortByOptions.includes(sortBy)) sortBy = 'CREATED_DESC';
+    
+    if(!orderBy || !orderByOptions.includes(orderBy)) orderBy = 'CREATED_DESC';
 
     const allowedInput = [
       'cropTypeId',
@@ -91,6 +92,12 @@ const marketPlaceSearch = (req, res) => {
       }
     }
 
+    if(req.query['search']!==null && req.query['search']!==undefined && req.query['search'].toString().trim() !== "") {
+      whereCondtions.push(`(CL.Name LIKE ? OR CL.Description LIKE ?)`);
+      params.push(`%${req.query['search']}%`);
+      params.push(`%${req.query['search']}%`);
+    }
+
     const orderByClauseMap = {
       'CREATED_DESC': 'CL.CreatedDate ASC',
       'PRICE_ASC': 'CL.PricePerUnit ASC',
@@ -100,18 +107,12 @@ const marketPlaceSearch = (req, res) => {
 
     const whereClause = whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}`: "";
 
-
-    /**
-     * Missin on Crop Listing
-     * Images
-     * Lisitng Name
-     */
-
+    const start = new Date();
     const stmnt = `
       SELECT 
         CL.Id,
         CL.Name,
-        CL.ImagePath
+        CL.ImagePath,
         CL.IsNegotiable,
         CL.AvailabilityDate,
         CL.MinimumOrderQuantity,
@@ -121,18 +122,17 @@ const marketPlaceSearch = (req, res) => {
         CL.CreatedDate,
         P.QualityGrade,
         CT.CropName AS CropTypeName,
-        V.Name AS CropVarietyName,
+        V.VarietyName AS CropVarietyName,
         FA.FirstName as FarmerFirstName,
         FA.LastName as FarmerLastName
       FROM CropListing CL
-      LEFT JOIN ProduceId P ON CL.ProduceId = P.Id
+      LEFT JOIN Produce P ON CL.ProduceId = P.Id
       LEFT JOIN Crop C ON P.CropId = C.Id
       LEFT JOIN CropType CT ON C.CropTypeId = CT.Id
       LEFT JOIN CropVariety V ON C.VarietyId = V.Id
       LEFT JOIN Farm F ON C.FarmId = F.Id
-      LEFT JOIN User FA ON C.FarmerId = FA.Id
-      ${whereClause} 
-      ORDER BY ${orderByClauseMap[sortBy]}
+      LEFT JOIN Users FA ON C.FarmerId = FA.Id
+      ${whereClause} ORDER BY ${orderByClauseMap[orderBy]}
       LIMIT ? OFFSET ?
     `;
 
@@ -141,7 +141,28 @@ const marketPlaceSearch = (req, res) => {
       .all(...params,pageSize,offset)
     );
 
-    return successResponse(res, toCamelCaseObject(results));
+    const countStmnt = db.prepare(
+        `SELECT COUNT(DISTINCT CL.Id) as total 
+        FROM CropListing CL
+        LEFT JOIN Produce P ON CL.ProduceId = P.Id
+        LEFT JOIN Crop C ON P.CropId = C.Id
+        ${whereClause}`,
+      );
+    const { total } = countStmnt.get(...params);
+
+    console.log(`time elapsed with join (${Date.now() - start} ms)`)
+
+    const resultData =  {
+      data: toCamelCaseObject(results),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    }
+
+    return successResponse(res, toCamelCaseObject(resultData));
   } catch (error) {
     console.log("marketPlaceSearch", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
