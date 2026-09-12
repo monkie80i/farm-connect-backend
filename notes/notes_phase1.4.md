@@ -76,3 +76,7 @@ ALTER TABLE CropListing ADD COLUMN Status NVARCHAR(20);
 
 ### ListingStatusLov
 - ACTIVE, PARTIALLY_FULFILLED, SOLD_OUT, WITHDRAWN, EXPIRED
+
+
+
+/// auto sold out at remaining qutnatity = 0

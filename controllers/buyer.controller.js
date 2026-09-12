@@ -5,6 +5,7 @@ const {
   errorResponse,
   notFound,
 } = require("../responses/api.responses");
+const { buildCropTimelineNew } = require("../services/timeline.V2.services");
 
 const getBuyerDashboard = (req, res) => {
   try {
@@ -171,172 +172,66 @@ const marketPlaceSearch = (req, res) => {
 
 const getMarketplaceDetails = (req, res) => {
   try {
-    const { listingId, listingType } = req.params;
+
+    const { listingId } = req.params;
     const id = Number(listingId);
 
-    if (!listingId || !listingType) {
-      return errorResponse(res, "listingId and listingType are required", 400);
+    if (!listingId) {
+      return errorResponse(res, "listingId are required", 400);
     }
 
-    const type = listingType.toUpperCase();
+    const listing = toCamelCaseObject(db
+      .prepare(`
+        SELECT 
+          CL.*,
+          P.QualityGrade,
+          P.HarvestDate,
+          P.HarvestCycleInstanceId,
+          P.Notes as ProduceSpecificNotes,
+          CT.CropName as CropTypeName,
+          CT.ScientificName,
+          V.VarietyName,
+          V.IsHybrid,
+          V.ShelfLifeDays,
+          V.Notes as VarietySpecificNotes,
+          FA.FirstName as FarmerFirstName,
+          FA.LastName as FarmerLastName,
+          FA.UserName as FarmerUserName,
+          F.Name as FarmName,
+          F.Address as FarmAddress,
+          F.City as FarmCity,
+          F.State as FarmState
+        FROM CropListing CL
+        LEFT JOIN Produce P ON CL.ProduceId = P.Id
+        LEFT JOIN Crop C ON P.CropId = C.Id
+        LEFT JOIN CropType CT ON C.CropTypeId = CT.Id
+        LEFT JOIN CropVariety V ON C.VarietyId = V.Id
+        LEFT JOIN Farm F ON C.FarmId = F.Id
+        LEFT JOIN Users FA ON C.FarmerId = FA.Id
+        WHERE CL.Id=?
+      `)
+      .get(id)
+    );
 
-    if (type !== "CROP" && type !== "GROUP") {
-      return errorResponse(res, "listingType must be CROP or GROUP", 400);
+    if(!listing) {
+      throw new Error('getMarketplaceDetails: Listing Not Found!');
     }
 
-    if (type === "CROP") {
-      const row = db.prepare(`
-        SELECT
-            cl.Id                                         AS ListingId,
-            'CROP'                                        AS ListingType,
-            ct.CropName                                   AS ListingName,
-            ct.CropName                                   AS CropType,
-            cv.VarietyName,
-            cl.AvailableQuantity,
-            cl.Unit,
-            cl.PricePerUnit,
-            cl.IsNegotiable,
-            cl.MinimumOrderQuantity,
-            cl.AvailabilityDate,
-            c.HealthStatus,
-            c.CurrentStage,
-            c.CultivatedArea,
-            c.CultivatedAreaUnit,
-            f.Name                                        AS FarmName,
-            f.City                                        AS FarmCity,
-            f.State                                       AS FarmState,
-            u.Id                                          AS FarmerId,
-            u.UserName                                    AS FarmerUsername,
-            u.FirstName || ' ' || u.LastName              AS FarmerFullName,
-            u.PhoneCode,
-            u.Phone
-        FROM CropListing cl
-        JOIN Crop c              ON c.Id  = cl.CropId
-        JOIN CropType ct         ON ct.Id = c.CropTypeId
-        JOIN Users u             ON u.Id  = c.FarmerId
-        JOIN Farm f              ON f.Id  = c.FarmId
-        LEFT JOIN CropVariety cv ON cv.Id = c.VarietyId
-        WHERE cl.Id = ?
-      `).get(id);
+    const harvestCycleInstance  = toCamelCaseObject(
+      db.prepare(`
+        SELECT *
+        FROM HarvestCycleInstance
+        WHERE Id = ?
+      `).get(listing.harvestCycleInstanceId)
+    );
 
-      if (!row) {
-        return errorResponse(res, "Listing not found", 404);
-      }
-
-      // Shape the response — farmer as a list for consistency with group
-      const result = {
-        listingId:           row.ListingId,
-        listingType:         row.ListingType,
-        listingName:         row.ListingName,
-        cropType:            row.CropType,
-        varietyName:         row.VarietyName,
-        availableQuantity:   row.AvailableQuantity,
-        unit:                row.Unit,
-        pricePerUnit:        row.PricePerUnit,
-        isNegotiable:        Boolean(row.IsNegotiable),
-        minimumOrderQty:     row.MinimumOrderQuantity,
-        availabilityDate:    row.AvailabilityDate,
-        healthStatus:        row.HealthStatus,
-        currentStage:        row.CurrentStage,
-        cultivatedArea:      row.CultivatedArea,
-        cultivatedAreaUnit:  row.CultivatedAreaUnit,
-        farm: {
-          name:  row.FarmName,
-          city:  row.FarmCity,
-          state: row.FarmState,
-        },
-        farmers: [
-          {
-            id:       row.FarmerId,
-            username: row.FarmerUsername,
-            fullName: row.FarmerFullName,
-            phone:    row.PhoneCode && row.Phone
-                        ? `${row.PhoneCode}${row.Phone}`
-                        : null,
-          }
-        ],
-        // // Data needed by the frontend for button redirects
-        // actions: {
-        //   startNegotiation: row.IsNegotiable
-        //     ? { listingId: row.ListingId, listingType: "CROP" }
-        //     : null,                                  // null = hide the button
-        //   placeOrder: {
-        //     listingId:   row.ListingId,
-        //     listingType: "CROP"
-        //   }
-        // }
-      };
-
-      return successResponse(res, result);
-
-    } else {
-      // GROUP — returns one row per participant, aggregate farmers
-      const rows = db.prepare(`
-        SELECT
-            gl.Id                                         AS ListingId,
-            'GROUP'                                       AS ListingType,
-            gl.Name                                       AS ListingName,
-            ct.CropName                                   AS CropType,
-            cv.VarietyName,
-            gl.TotalCombinedQuantity                      AS AvailableQuantity,
-            gl.Unit,
-            gl.PricePerUnit,
-            NULL                                          AS IsNegotiable,
-            gl.MinRequiredQuantity                        AS MinimumOrderQuantity,
-            gl.GroupAvailabilityDate                      AS AvailabilityDate,
-            gl.Status                                     AS GroupStatus,
-            gl.NumberOfParticipants,
-            gl.StartDate,
-            gl.TerminationDate,
-            u.Id                                          AS FarmerId,
-            u.UserName                                    AS FarmerUsername
-        FROM GroupListing gl
-        JOIN Crop c               ON c.Id       = gl.CropId
-        JOIN CropType ct          ON ct.Id      = c.CropTypeId
-        JOIN GroupParticipants gp ON gp.GroupId = gl.Id
-        JOIN Users u              ON u.Id       = gp.UserId
-        LEFT JOIN CropVariety cv  ON cv.Id      = c.VarietyId
-        WHERE gl.Id = ?
-      `).all(id);
-
-      if (!rows.length) {
-        return errorResponse(res, "Listing not found", 404);
-      }
-
-      const base = rows[0];
-
-      const result = {
-        listingId:          base.ListingId,
-        listingType:        base.ListingType,
-        listingName:        base.ListingName,
-        cropType:           base.CropType,
-        varietyName:        base.VarietyName,
-        availableQuantity:  base.AvailableQuantity,
-        unit:               base.Unit,
-        pricePerUnit:       base.PricePerUnit,
-        isNegotiable:       false,                  // group listings are never negotiable
-        minimumOrderQty:    base.MinimumOrderQuantity,
-        availabilityDate:   base.AvailabilityDate,
-        groupStatus:        base.GroupStatus,
-        numberOfParticipants: base.NumberOfParticipants,
-        startDate:          base.StartDate,
-        terminationDate:    base.TerminationDate,
-        // Aggregate one row per farmer
-        farmers: rows.map(r => ({
-          id:       r.FarmerId,
-          username: r.FarmerUsername,
-        })),
-        // actions: {
-        //   startNegotiation: null,                   // group listings don't support negotiation
-        //   placeOrder: {
-        //     listingId:   base.ListingId,
-        //     listingType: "GROUP"
-        //   }
-        // }
-      };
-
-      return successResponse(res, result);
+    if(!harvestCycleInstance) {
+      return errorResponse(res,"Invalid: harvest cycle invalid",400);
     }
+    const timeline = buildCropTimelineNew(harvestCycleInstance);
+    listing["timeline"] =  timeline;
+
+    return successResponse(res,listing);
 
   } catch (error) {
     console.log("getMarketplaceDetails", error);

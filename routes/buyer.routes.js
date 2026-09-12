@@ -22,7 +22,7 @@ router.get('/dashboard/:userId', getBuyerDashboard);
 
 router.get('/marketplace', marketPlaceSearch);  
 
-router.get("/marketplace/:listingType/:listingId", getMarketplaceDetails);
+router.get("/marketplace/:listingId", getMarketplaceDetails);
 
 router.post('/negotiations/:listingId', createNegotiation); // tested working
 
