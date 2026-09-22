@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Connect - Query</title>
+    <link rel="stylesheet" href="/portal.css">
+    <link rel="stylesheet" href="/query/query.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">Farm Connect</div>
+        <div class="page-title">Database Query</div>
+    </header>
+
+    <main class="query-page">
+        <div class="query-head">
+            <div>
+                <div class="eyebrow">Database tools</div>
+                <h1>Query Database</h1>
+                <p>Read-only queries against the current SQLite database.</p>
+            </div>
+            <a class="back-link" href="/">← Home</a>
+        </div>
+
+        <section class="query-card">
+            <div class="query-toolbar">
+                <span class="hint">Allowed: SELECT, WITH, PRAGMA, EXPLAIN</span>
+                <div class="toolbar-actions">
+                    <button id="clearQuery" type="button" class="secondary-button">Clear</button>
+                    <button id="runQuery" type="button" class="primary-button">Run Query <span class="shortcut">⌘/Ctrl + Enter</span></button>
+                </div>
+            </div>
+            <textarea id="sqlInput" spellcheck="false" placeholder="SELECT * FROM UserRolesLov ORDER BY Code;"></textarea>
+            <div id="queryStatus" class="query-status" aria-live="polite"></div>
+        </section>
+
+        <section id="resultsCard" class="query-card results-card">
+            <div class="results-head">
+                <div>
+                    <h2>Results</h2>
+                    <span id="rowCount" class="muted"></span>
+                </div>
+                <button id="copyResults" type="button" class="secondary-button" disabled>Copy Results</button>
+            </div>
+            <div id="results" class="results"></div>
+        </section>
+    </main>
+
+    <script src="/query/query.js"></script>
+</body>
+</html>

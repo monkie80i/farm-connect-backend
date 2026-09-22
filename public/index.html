@@ -3,15 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="favicon-accent-2.png">
-    <title>Farm Connect BE</title>
+    <link rel="stylesheet" href="/portal.css">
+    <title>Farm Connect - Database Tools</title>
 </head>
 <body>
-    
-    <h1>Welcome to Farm Connect Backend</h1>
-    <h1>Endpoint list</h1>
-    <ul>
-        <li><a href="/tables">tables</a></li>
-    </ul>
+    <header class="topbar">
+        <div class="brand">Farm Connect</div>
+        <div class="page-title">Database Tools</div>
+    </header>
+
+    <main class="landing">
+        <section class="hero">
+            <div class="eyebrow">Developer tools</div>
+            <h1>Farm Connect Database</h1>
+            <p>Inspect your SQLite database structure and run safe read-only queries from one place.</p>
+        </section>
+
+        <section class="tool-grid">
+            <a class="tool-card" href="/tables">
+                <div class="tool-icon">▦</div>
+                <h2>Tables</h2>
+                <p>Explore main table schemas, columns, foreign keys, references and lookup data.</p>
+                <span class="tool-link">Open Tables →</span>
+            </a>
+            <a class="tool-card" href="/query">
+                <div class="tool-icon">⌕</div>
+                <h2>Query</h2>
+                <p>Run SELECT, WITH, PRAGMA and EXPLAIN queries against the current database.</p>
+                <span class="tool-link">Open Query →</span>
+            </a>
+        </section>
+    </main>
 </body>
 </html>

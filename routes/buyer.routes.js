@@ -15,6 +15,17 @@ const {
 } = require("../controllers/negotiation.controller");
 
 const { getOrders,createOrder,orderDetails } = require("../controllers/order.controller");
+const {
+bulkRequestsSearch,
+  bulkRequestsCreate,
+  bulkRequestsDetail,
+  bulkRequestsUpdate,
+  bulkRequestsCreatePledge,
+  bulkRequestsSelectPledge,
+  bulkRequestsDeletePledge,
+  searchGroupListings,
+  groupDetails
+} = require("../controllers/group.controller");
 
 // ROUTES START HERE
 
@@ -23,6 +34,27 @@ router.get('/dashboard/:userId', getBuyerDashboard);
 router.get('/marketplace', marketPlaceSearch);  
 
 router.get("/marketplace/:listingId", getMarketplaceDetails);
+
+// ----------------
+
+router.get("/bulk-requests", bulkRequestsSearch); // tested working
+
+router.post("/bulk-requests", bulkRequestsCreate); // tested working
+
+router.get("/bulk-request/:reqId", bulkRequestsDetail); // tested working
+
+router.patch("/bulk-request/:reqId", bulkRequestsUpdate); // tested working // group creation happends here
+
+router.put("/bulk-request/pledge/:pledgeId", bulkRequestsSelectPledge); // tested working
+
+
+// ---------------------
+
+router.get("/groups", searchGroupListings);
+
+router.get("/group/:groupId", groupDetails);
+
+// ---------------------
 
 router.post('/negotiations/:listingId', createNegotiation); // tested working
 

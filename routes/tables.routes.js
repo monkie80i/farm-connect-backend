@@ -1,12 +1,11 @@
 const express = require('express');
-const path = require('path');
 const db = require('../db');
 const LOVs = require('../generic-lookup-tables');
+
 const router = express.Router();
 const lookupTableSet = new Set(LOVs);
 
 function quoteIdentifier(identifier) {
-    // SQLite identifiers are safely quoted by doubling embedded quotes.
     return `"${String(identifier).replace(/"/g, '""')}"`;
 }
 
@@ -34,13 +33,9 @@ function getForeignKeys(tableName) {
 
 function getReferencedBy(tableName) {
     const result = [];
-
     for (const sourceTable of getAllTableNames()) {
         if (sourceTable === tableName) continue;
-
-        const foreignKeys = getForeignKeys(sourceTable);
-
-        for (const fk of foreignKeys) {
+        for (const fk of getForeignKeys(sourceTable)) {
             if (fk.table === tableName) {
                 result.push({
                     table: sourceTable,
@@ -55,7 +50,6 @@ function getReferencedBy(tableName) {
             }
         }
     }
-
     return result;
 }
 
@@ -69,7 +63,6 @@ function assertExistingTable(tableName) {
 
 function getLookupData(tableName) {
     assertExistingTable(tableName);
-
     if (!lookupTableSet.has(tableName)) {
         const error = new Error(`'${tableName}' is not a lookup table.`);
         error.statusCode = 400;
@@ -78,7 +71,6 @@ function getLookupData(tableName) {
 
     const columns = getTableColumns(tableName);
     const columnNames = new Set(columns.map(column => column.name));
-
     if (!columnNames.has('Code') || !columnNames.has('Description')) {
         const error = new Error(`Lookup table '${tableName}' must contain Code and Description columns.`);
         error.statusCode = 500;
@@ -92,11 +84,9 @@ function getLookupData(tableName) {
     `).all();
 }
 
-// GET /api/v1/tables
 router.get('/', (req, res) => {
     try {
         const tables = getAllTableNames();
-
         res.json({
             mainTables: tables.filter(table => !lookupTableSet.has(table)),
             lookupTables: tables.filter(table => lookupTableSet.has(table))
@@ -107,12 +97,10 @@ router.get('/', (req, res) => {
     }
 });
 
-// GET /api/v1/tables/schema/:tableName
 router.get('/schema/:tableName', (req, res) => {
     try {
         const tableName = req.params.tableName;
         assertExistingTable(tableName);
-
         if (lookupTableSet.has(tableName)) {
             const error = new Error(`'${tableName}' is a lookup table.`);
             error.statusCode = 400;
@@ -120,7 +108,6 @@ router.get('/schema/:tableName', (req, res) => {
         }
 
         const foreignKeys = getForeignKeys(tableName);
-
         res.json({
             tableName,
             columns: getTableColumns(tableName),
@@ -144,15 +131,10 @@ router.get('/schema/:tableName', (req, res) => {
     }
 });
 
-// GET /api/v1/tables/lookup/:tableName
 router.get('/lookup/:tableName', (req, res) => {
     try {
         const tableName = req.params.tableName;
-
-        res.json({
-            tableName,
-            rows: getLookupData(tableName)
-        });
+        res.json({ tableName, rows: getLookupData(tableName) });
     } catch (error) {
         console.error(`Failed to get lookup '${req.params.tableName}':`, error);
         res.status(error.statusCode || 500).json({

@@ -5,7 +5,7 @@ const LOVs = [
     "HealthStatusLov",
     "CropStagesLov",
     "HealthLogSeverityLov",
-    "GroupVisibilityStatusLov",
+    "GroupListingStatusLov",
     "OrderStatusLov",
     "DisputeTypesLov",
     "DisputeStatusLov",
@@ -28,6 +28,9 @@ const LOVs = [
     "HarvestCycleInstanceStatusLov",
     "ListingStatusLov",
     "ProduceQualityLov",
+    "BulkRequestStatus",
+    "BulkRequestPledgeStatus",
+    "GroupParticipantStatusLov",
 ];
 
 module.exports = LOVs;

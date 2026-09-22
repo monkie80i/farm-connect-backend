@@ -35,14 +35,16 @@ const {
 
 const {
     searchGroupListings,
-    createGroup,
     groupDetails,
     editGroup,
     listGroupInivitation,
     createGroupInvitation,
     listGroupRequest,
     createGroupRequest,
-    acceptRejectGroupRequest
+    acceptRejectGroupRequest,
+    bulkRequestsCreatePledge,
+    bulkRequestsSelectPledge,
+    bulkRequestsDeletePledge
 } = require('../controllers/group.controller');
 
 const {getOrders,createOrder,orderDetails} = require('../controllers/order.controller');
@@ -110,27 +112,34 @@ router.patch('/listing/:listingId', editCropListing);
 
 // -------------------------------------------------------
 
-router.get('/groups', searchGroupListings); // tested working
+router.post("/bulk-request/:reqId/pledge", bulkRequestsCreatePledge); // tested working
 
-router.post('/groups/:userId', createGroup); // tested working
+router.delete("/bulk-request/pledge/:pledgeId", bulkRequestsDeletePledge); // tested working
+
+// -------------------------------------------------------
+
+
+router.get('/groups', searchGroupListings); // tested working
 
 router.get('/group/:groupId', groupDetails); // tested working
 
-router.put('/group/:groupId', editGroup); // tested working
+router.put('/group/:groupId', editGroup); // not sure if needed
 
 // router.delete('/group/:groupId', (req,res) => {});
+// ------------------------------------------------
 
-router.get('/group-invitations/:userId', listGroupInivitation); // tested working
+// router.get('/group-invitations/:userId', listGroupInivitation); // obsolete
 
-router.post('/group-invitation',createGroupInvitation); // tested working
+// router.post('/group-invitation',createGroupInvitation); // obsolete
 
-router.get('/group-requests/:groupId', listGroupRequest); // tested working
+// router.get('/group-requests/:groupId', listGroupRequest); // obsolete
 
-router.post('/group-request', createGroupRequest); // tested working
+// router.post('/group-request', createGroupRequest); // obsolete
 
-router.post('/accept-reject-group-request', acceptRejectGroupRequest); // tested working
+// router.post('/accept-reject-group-request', acceptRejectGroupRequest); // obsolete
 
-// router.delete('/remove-group-participants',(req,res) => {}); // not needed atm
+
+// ----------------------------------------------------
 
 router.get('/orders/:userId', getOrders); // tested working
 
