@@ -13,6 +13,8 @@ const supportRoutes = require("./routes/support.routes");
 const adminRoutes = require("./routes/admin.routes");
 const tablesRoutes = require("./routes/tables.routes");
 const queryRoutes = require("./routes/query.routes");
+const negotaitionRoutes = require("./routes/negotiation.routes");
+const orderTicketRoutes = require("./routes/order-ticket.routes");
 
 
 const { UPLOAD_DIR } = require("./services/file.services");
@@ -37,6 +39,11 @@ app.use(baseUrl + "/support", supportRoutes);
 app.use(baseUrl + "/user/",userRoutes);
 app.use(baseUrl + "/tables/", tablesRoutes);
 app.use(baseUrl + "/query/", queryRoutes);
+
+// following is the right way to do it
+app.use(baseUrl + "/negotiations", negotaitionRoutes);
+app.use(baseUrl + "/order-tickets", orderTicketRoutes);
+
 app.use(baseUrl + "/uploads", express.static(UPLOAD_DIR));
 app.use(express.static(path.join(__dirname, "public")));
 

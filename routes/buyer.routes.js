@@ -11,7 +11,9 @@ const {
   listNegotiationHistory,
   createNegotiationHistory,
   accepNegotiation,
-  negotiations
+  searchNegotiations,
+  createNegotiationV2,
+  negotiationDetails,
 } = require("../controllers/negotiation.controller");
 
 const { getOrders,createOrder,orderDetails } = require("../controllers/order.controller");
@@ -56,16 +58,27 @@ router.get("/group/:groupId", groupDetails);
 
 // ---------------------
 
-router.post('/negotiations/:listingId', createNegotiation); // tested working
+router.get('/negotiations', searchNegotiations); 
+
+router.post('/negotiation', createNegotiationV2);
+
+router.get('/negotiation/:id',negotiationDetails);
+
+// ---------------------
+
+
+
+
+// router.post('/negotiations/:listingId', createNegotiation); // tested working
 
 // router.get('/negotiations', (req,res) => {
 //     // get negotiations for buyer
 // });
-router.get('/negotiations/:listingId', negotiations); // tested working
+// router.get('/negotiations/:listingId', negotiations); // obsolete
 
 router.post('/negotiation-history/:negotiationId', createNegotiationHistory); // tested working
 
-router.get('/negotiation-history/:negotiationId', listNegotiationHistory); // tested working
+// router.get('/negotiation-history/:negotiationId', listNegotiationHistory); // tested working
 
 router.post('/negotiation-accept/:negoHistId', accepNegotiation); // tested working
 

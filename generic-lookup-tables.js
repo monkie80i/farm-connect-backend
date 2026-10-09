@@ -31,6 +31,11 @@ const LOVs = [
     "BulkRequestStatus",
     "BulkRequestPledgeStatus",
     "GroupParticipantStatusLov",
+    "NegotationStatusLov",
+    "OrderPaymentStatusLov",
+    "OrderDeliveryStatusLov",
+    "OrderLineItemStatusLov",
+    "OrderTicketStatusLov",
 ];
 
 module.exports = LOVs;

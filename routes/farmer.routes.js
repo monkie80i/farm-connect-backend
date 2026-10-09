@@ -50,13 +50,15 @@ const {
 const {getOrders,createOrder,orderDetails} = require('../controllers/order.controller');
 
 const {
+    searchNegotiations,
     createNegotiation,
   negotiationDetails,
   updateNegotiation,
   listNegotiationHistory,
   createNegotiationHistory,
   accepNegotiation,
-  negotiations
+  negotiations,
+  createNegotiationV2
 } = require("../controllers/negotiation.controller");
 
 const { genFarmerReports } = require("../controllers/reports.controller");
@@ -141,17 +143,26 @@ router.put('/group/:groupId', editGroup); // not sure if needed
 
 // ----------------------------------------------------
 
+router.get('/negotiations', searchNegotiations); 
+
+router.get('/negotiation/:id',negotiationDetails);
+
+// ----------------------------------------------------
+
+
+
+
 router.get('/orders/:userId', getOrders); // tested working
 
 router.get('/order/:orderId', orderDetails); // tested workings
 
-router.get('/negotiations/:listingId', negotiations); // tested working
+// router.get('/negotiations/:listingId', negotiations); // obsolete
 
-router.post('/negotiations/:listingId', createNegotiation); // tested working
+// router.post('/negotiations/:listingId', createNegotiation); // tested working
 
 router.post('/negotiation-history/:negotiationId', createNegotiationHistory); // tested working
 
-router.get('/negotiation-history/:negotiationId', listNegotiationHistory); // tested working
+// router.get('/negotiation-history/:negotiationId', listNegotiationHistory); // tested working
 
 router.post('/negotiation-accept/:negoHistId', accepNegotiation); // tested working
 
