@@ -40,81 +40,6 @@ const searchGroupListings = (req, res) => {
   }
 };
 
-// obsolete
-const createGroup = (req, res) => {
-  // tested working
-  try {
-    const {
-      name,
-      cropId,
-      adminContribution,
-      minRequiredQuantity,
-      totalRequiredQuantity,
-      pricePerUnit,
-      unit,
-      groupAvailabilityDate,
-      startDate,
-      createdUser,
-    } = req.body;
-
-    // Check if user exists
-    if (!userExists(createdUser)) {
-      return notFound(res, "User Not Found!");
-    }
-
-    const createGroupTransaction = db.transaction(() => {
-      const createStmnt = db.prepare(`
-        INSERT INTO GroupListing (
-          Name,
-          CropId,
-          AdminContribution,
-          MinRequiredQuantity,
-          TotalRequiredQuantity,
-          Status,
-          PricePerUnit,
-          Unit,
-          GroupAvailabilityDate,
-          StartDate,
-          FormingDate,
-          NumberOfParticipants,
-          CreatedUser,
-          CreatedDate
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      `);
-
-      const result = createStmnt.run(
-        name,
-        cropId,
-        adminContribution,
-        minRequiredQuantity,
-        totalRequiredQuantity,
-        "FORM",
-        pricePerUnit,
-        unit,
-        groupAvailabilityDate,
-        startDate,
-        getTodayDate(),
-        1, // NumberOfParticipants starts with 1 (the creator)
-        createdUser,
-        new Date().toISOString(),
-      );
-
-      return result.lastInsertRowid;
-    });
-
-    const groupId = createGroupTransaction();
-
-    return successResponse(
-      res,
-      { groupId },
-      "Group created successfully!",
-      201,
-    );
-  } catch (error) {
-    console.log("createGroup", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
 
 const groupDetails = (req, res) => {
   try {
@@ -244,221 +169,6 @@ const editGroup = (req, res) => {
     return successResponse(res);
   } catch (error) {
     console.log("editGroup", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-// obsolete
-const listGroupInivitation = (req, res) => {
-  // tested working
-  try {
-    let page = Number(req.query.page) || 1;
-    const pageSize = Number(req.query.pageSize) || 10;
-    const offset = (page - 1) * pageSize;
-
-    const userId = Number(req.params.userId);
-    const result = db
-      .prepare(
-        `
-      SELECT * FROM GroupInvitation WHERE InvitedUserId = ? LIMIT ? OFFSET ?;
-    `,
-      )
-      .all(userId, pageSize, offset);
-
-    const countStmnt = db.prepare(
-      `SELECT COUNT(DISTINCT Id) as total 
-       FROM GroupInvitation
-       WHERE InvitedUserId = ?`,
-    );
-    const { total } = countStmnt.get(userId);
-
-    return successResponse(res, {
-      data: toCamelCaseObject(result),
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
-      },
-    });
-  } catch (error) {
-    console.log("listGroupInivitation", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-// obsolete
-const createGroupInvitation = (req, res) => {
-  // tested working
-  try {
-    const { groupId, invitedUserId, invitedUserCropId, message, createdUser } =
-      req.body;
-
-    const checkCropStmtn = db.prepare(`
-      SELECT FarmerId as farmerId FROM Crop WHERE Id = ?;  
-    `);
-    const checkCrop = checkCropStmtn.get(invitedUserCropId);
-
-    if (!checkCrop) {
-      return notFound(res, "Crop Not Found!");
-    }
-
-    console.log(invitedUserId, checkCrop.farmerId);
-    if (checkCrop.farmerId !== invitedUserId) {
-      return errorResponse(res, "Crop Doesnt Belong to the Farmer", 400);
-    }
-
-    const stmnt = db.prepare(`
-      INSERT INTO GroupInvitation 
-      (GroupId,InvitedUserId,InvitedUserCropId,Message,CreatedUser)
-      VALUES (?,?,?,?,?);
-    `);
-    const result = stmnt.run(
-      groupId,
-      invitedUserId,
-      invitedUserCropId,
-      message,
-      createdUser,
-    );
-
-    return successResponse(res, result.lastInsertRowid);
-  } catch (error) {
-    console.log("createGroupInvitation", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-// obsolete
-const listGroupRequest = (req, res) => {
-  // tested working
-  try {
-    let page = Number(req.query.page) || 1;
-    const pageSize = Number(req.query.pageSize) || 10;
-    const offset = (page - 1) * pageSize;
-
-    const groupId = Number(req.params.groupId);
-    const result = db
-      .prepare(
-        `
-      SELECT * FROM GroupRequests WHERE GroupId = ? LIMIT ? OFFSET ?;
-    `,
-      )
-      .all(groupId, pageSize, offset);
-
-    const countStmnt = db.prepare(
-      `SELECT COUNT(DISTINCT Id) as total 
-       FROM GroupRequests
-       WHERE GroupId = ?`,
-    );
-    const { total } = countStmnt.get(groupId);
-
-    return successResponse(res, {
-      data: toCamelCaseObject(result),
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
-      },
-    });
-  } catch (error) {
-    console.log("listGroupRequest", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-// obsolete
-const createGroupRequest = (req, res) => {
-  // tested working
-  try {
-    const {
-      groupId,
-      requestingUserId,
-      requestingUserCropId,
-      message,
-      contributingQuantity,
-      contributingQuantityUnit,
-    } = req.body;
-
-    const stmnt = db.prepare(`
-      INSERT INTO GroupRequests 
-      (GroupId,RequestingUserId,RequestingUserCropId,Message,
-      ContributingQuantity,ContributingQuantityUnit)
-      VALUES (?,?,?,?,?,?);
-    `);
-    const result = stmnt.run(
-      formatSQLValue(groupId),
-      formatSQLValue(requestingUserId),
-      formatSQLValue(requestingUserCropId),
-      formatSQLValue(message),
-      formatSQLValue(contributingQuantity),
-      formatSQLValue(contributingQuantityUnit),
-    );
-
-    return successResponse(res, result.lastInsertRowid);
-  } catch (error) {
-    console.log("createGroupRequest", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-// obsolete
-const acceptRejectGroupRequest = (req, res) => {
-  // tested working
-  try {
-    const { userId, groupRequestId, decission } = req.body;
-
-    if (!["ACCEPT", "REJECT"].includes(decission)) {
-      return errorResponse(res, "Decission Invalid", 403);
-    }
-
-    const groupReqStmnt = db.prepare(
-      `SELECT * FROM GroupRequests WHERE Id = ?`,
-    );
-    const groupReq = toCamelCaseObject(groupReqStmnt.get(groupRequestId));
-
-    if (!groupReq) {
-      return notFound(res, "Group request not found!");
-    }
-
-    const group = toCamelCaseObject(
-      db.prepare(`SELECT * FROM GroupListing WHERE Id = ?`).get(userId),
-    );
-
-    if (group.createdUser !== userId) {
-      return errorResponse(res, "Group doesnt belog to the user", 403);
-    }
-
-    const groupReqAcceptTransaction = db.transaction(() => {
-      const stmnt = db.prepare(`
-        UPDATE GroupRequests 
-        SET Decission = ?,UpdatedDate = CURRENT_TIMESTAMP
-        WHERE Id = ?;
-      `);
-      stmnt.run(decission, groupRequestId);
-
-      if (decission === "ACCEPT") {
-        const stmnt2 = db.prepare(`
-          INSERT INTO GroupParticipants
-          (UserId,CropId,GroupId,ContributionQuantity,
-          contributingQuantityUnit, JoinedDate)
-          VALUES (?,?,?,?,?,?);
-        `);
-        stmnt2.run(
-          formatSQLValue(groupReq.requestingUserId),
-          formatSQLValue(groupReq.requestingUserCropId),
-          formatSQLValue(groupReq.groupId),
-          formatSQLValue(groupReq.contributingQuantity),
-          formatSQLValue(groupReq.contributingQuantityUnit),
-          formatSQLValue(new Date().toISOString()),
-        );
-      }
-    });
-
-    groupReqAcceptTransaction();
-    return successResponse(res);
-  } catch (error) {
-    console.log("acceptRejectGroupRequest", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
@@ -809,6 +519,8 @@ const bulkRequestsUpdate = (req, res) => {
           );
         }
         log(indent, `bulkRequestsUpdate txn group listng creation end.`);
+
+        // should i create order here? is yes how?
       }
 
       // throw new Error('_ROLL_BACK_');
@@ -999,7 +711,6 @@ module.exports = {
   searchGroupListings,
   groupDetails,
   editGroup,
-  //----------
   bulkRequestsSearch,
   bulkRequestsCreate,
   bulkRequestsDetail,
@@ -1007,13 +718,4 @@ module.exports = {
   bulkRequestsCreatePledge,
   bulkRequestsSelectPledge,
   bulkRequestsDeletePledge,
-
-  // obsolete 
-  createGroup,
-  listGroupInivitation,
-  createGroupInvitation,
-  listGroupRequest,
-  createGroupRequest,
-  acceptRejectGroupRequest,
-  
 };

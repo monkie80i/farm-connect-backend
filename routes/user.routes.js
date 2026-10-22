@@ -24,7 +24,7 @@ const {
     editDispute,
     sendChat,
     relaodChat,
-} = require("../controllers/order.controller")
+} = require("../controllers/dispute.controller")
 
 router.get('/users',searchUsers); // tested working
 
@@ -63,9 +63,5 @@ router.post('/order-dispute-chat/:disputeId', sendChat);
 router.get('/order-dispute-chat/:disputeId', relaodChat);
 
 // router.delete('/order-dispute/:disputeId', (req,res) => {}); // not urgent
-
-// router.get('/user/:userId', (req,res) => {}); // not urgent
-
-// router.put('/user/:userId', (req,res) => {}); // not urgent
 
 module.exports = router;

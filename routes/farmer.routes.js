@@ -7,7 +7,6 @@ const {
     cropInitializer,
     editCrop,
     deleteCrop,
-    // markCropAsHarvested,
     getCropLifecycle,
     cropLifecycleStageObserved,
     allCropsCalenders,
@@ -17,12 +16,10 @@ const {
     farmerProduceListByCrop,
 } = require('../controllers/crop.controller');
 const {
-    cropHealthLogs,
     createHealthLog,
     editCropHealthLog,
     deleteHealthlog,
     cropHealthLogsSearch,
-    
 } = require('../controllers/health-log-controllers');
 
 const {
@@ -30,35 +27,22 @@ const {
     createCropListing,
     detailCropListing,
     editCropListing,
-    deleteCropListing,
 } = require('../controllers/listing.controller');
 
 const {
     searchGroupListings,
     groupDetails,
     editGroup,
-    listGroupInivitation,
-    createGroupInvitation,
-    listGroupRequest,
-    createGroupRequest,
-    acceptRejectGroupRequest,
     bulkRequestsCreatePledge,
-    bulkRequestsSelectPledge,
     bulkRequestsDeletePledge
 } = require('../controllers/group.controller');
 
-const {getOrders,createOrder,orderDetails} = require('../controllers/order.controller');
 
 const {
     searchNegotiations,
-    createNegotiation,
   negotiationDetails,
-  updateNegotiation,
-  listNegotiationHistory,
   createNegotiationHistory,
-  accepNegotiation,
-  negotiations,
-  createNegotiationV2
+  accepNegotiation
 } = require("../controllers/negotiation.controller");
 
 const { genFarmerReports } = require("../controllers/reports.controller");
@@ -66,108 +50,49 @@ const { genFarmerReports } = require("../controllers/reports.controller");
 // START ROUTES DEFENITION
 
 router.get('/dashboard/:userId', getFarmerDashboard); // tested working
-
 router.get('/crops/:userId', getFarmerCrops); // tested working
-
 router.post('/crops/:userId', cropInitializer); // tested working
-
 router.get('/crop/:cropId', getCropDetails); // tested working
-
 router.put('/crop/:cropId', editCrop); // tested working
-
 router.delete('/crop/:cropId', deleteCrop); // tested working
-
 router.get('/crop/timelines/:cropId', getCropTimelines); // tested working
-
-// router.post('/crop/harvest/:cropId', markCropAsHarvested); // obsolete
-
 router.get('/crops/lifecycle/:cropId', getCropLifecycle); // tested working
-
 router.post('/crops/lifecycle-stage-observed/:cropId', cropLifecycleStageObserved); // tested working
-
 router.get('/crops-health-logs/:cropId',cropHealthLogsSearch); // tested working
-
 router.post('/crops-health-logs/:cropId', createHealthLog); // tested working
-
 router.put('/crops-health-logs/:logId', editCropHealthLog); // tested working
-
 router.delete('/crops-health-logs/:logId', deleteHealthlog); // tested working
-
 router.get('/crops-calender/:userId', allCropsCalenders); // tested working
-
 router.get('/crop-calender/:cropId', cropCalender); // tested working
-
 router.get('/crop-yeild-estimate/:cropId', cropYieldEstimation); // tested working
-
 router.get('/produces',farmerProduceListByCrop); // tested working
-// --------------------------------------------------------------------
 
+
+
+// LISTINGS
 router.get('/listings/:userId', cropListings); // tested working
-
 router.post('/listings', createCropListing ); // tested working
-
 router.get('/listing/:listingId', detailCropListing); 
-
 router.patch('/listing/:listingId', editCropListing);
 
-// router.delete('/listing/:listingId', deleteCropListing); // deferred
-
-// -------------------------------------------------------
-
+// BULK REQUESTS
 router.post("/bulk-request/:reqId/pledge", bulkRequestsCreatePledge); // tested working
-
 router.delete("/bulk-request/pledge/:pledgeId", bulkRequestsDeletePledge); // tested working
 
-// -------------------------------------------------------
-
-
+// GROUPS
 router.get('/groups', searchGroupListings); // tested working
-
 router.get('/group/:groupId', groupDetails); // tested working
-
 router.put('/group/:groupId', editGroup); // not sure if needed
 
-// router.delete('/group/:groupId', (req,res) => {});
-// ------------------------------------------------
-
-// router.get('/group-invitations/:userId', listGroupInivitation); // obsolete
-
-// router.post('/group-invitation',createGroupInvitation); // obsolete
-
-// router.get('/group-requests/:groupId', listGroupRequest); // obsolete
-
-// router.post('/group-request', createGroupRequest); // obsolete
-
-// router.post('/accept-reject-group-request', acceptRejectGroupRequest); // obsolete
-
-
-// ----------------------------------------------------
-
+// NEGOTIATIONS
 router.get('/negotiations', searchNegotiations); 
-
 router.get('/negotiation/:id',negotiationDetails);
 
-// ----------------------------------------------------
-
-
-
-
-router.get('/orders/:userId', getOrders); // tested working
-
-router.get('/order/:orderId', orderDetails); // tested workings
-
-// router.get('/negotiations/:listingId', negotiations); // obsolete
-
-// router.post('/negotiations/:listingId', createNegotiation); // tested working
-
-router.post('/negotiation-history/:negotiationId', createNegotiationHistory); // tested working
-
-// router.get('/negotiation-history/:negotiationId', listNegotiationHistory); // tested working
-
+// NEGOTIATION HISTORY
 router.post('/negotiation-accept/:negoHistId', accepNegotiation); // tested working
 
-router.post('/generate-reports', genFarmerReports);
 
+router.post('/generate-reports', genFarmerReports);
 router.get('/farms/:userId',listFarmerFarms);
 
 router.get('/health-alerts/:userId', (req,res) => {
