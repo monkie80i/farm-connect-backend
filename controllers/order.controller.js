@@ -1,217 +1,36 @@
 const db = require("../db");
-const {
-  toCamelCaseObject,
-  formatSQLValue,
-  getFutureDateISO,
-} = require("../utils/utlis");
+const { toCamelCaseObject } = require("../utils/utlis");
 const {
   successResponse,
   errorResponse,
   notFound,
 } = require("../responses/api.responses");
+const { getUserById } = require("../services/user.service");
+const { log } = require("../services/logger.services");
+const { 
+  createOrderRecord,
+  prepareOrderLineItems,
+  insertOrderLineItem,
+  updateListingRemainingQuantity
+} = require("../services/order.services");
 
-const getOrders = (req, res, role = "Farmer") => {
-  // tested working
-  try {
-    const userId = Number(req.params.userId);
-    const page = Number(req.query.page) || 1;
-    const pageSize = Number(req.query.pageSize) || 10;
-    const offset = (page - 1) * pageSize;
-
-    const {
-      listerId,
-      orderStatus,
-      createdDate,
-      // crop,
-      isNegotiated,
-    } = req.query;
-
-    const whereContions = [];
-    const params = [];
-
-    if (userId) {
-      if (role === "Farmer") {
-        whereContions.push("c.FarmerId = ?");
-      } else {
-        whereContions.push("o.CreatedUser = ?");
-      }
-      params.push(formatSQLValue(userId));
-    }
-
-    if (listerId) {
-      whereContions.push("o.ListerId = ?");
-      params.push(formatSQLValue(listerId));
-    }
-
-    if (orderStatus) {
-      whereContions.push("o.OrderStatus = ?");
-      params.push(formatSQLValue(orderStatus));
-    }
-
-    if (orderStatus) {
-      whereContions.push("o.OrderStatus = ?");
-      params.push(formatSQLValue(orderStatus));
-    }
-
-    if (createdDate) {
-      whereContions.push("o.CreatedDate = ?");
-      params.push(formatSQLValue(createdDate));
-    }
-
-    if (isNegotiated) {
-      whereContions.push("o.IsNegotiated = ?");
-      params.push(formatSQLValue(isNegotiated));
-    }
-
-    params.push(pageSize, offset);
-
-    const whereClause =
-      whereContions.length > 0 ? "WHERE " + whereContions.join(" AND ") : "";
-
-    const stmnt = db.prepare(`
-      SELECT 
-      o.Id,
-      o.ListingEntityType,
-      COALESCE (o.ListingId,o.GroupId) as OrderListingId,
-      COALESCE (c.Name,g.Name) as OrderName,
-      buyer.UserName,
-      seller.UserName,
-      o.Quantity,
-      o.OrderStatus,
-      o.IsNegotiated,
-      COALESCE (o.ActualFulfillmentDate,o.EstimatedFulfillmentDate) as FullfilmentDate,
-      o.UpdatedUser,o.UpdatedDate
-      FROM Orders o
-      LEFT JOIN Users buyer ON o.BuyerId = buyer.Id
-      LEFT JOIN Users seller ON o.ListerId = seller.Id
-      LEFT JOIN CropListing cl ON o.ListingId = cl.Id
-      LEFT JOIN Crop c ON cl.CropId = c.Id
-      LEFT JOIN GroupListing g ON o.GroupId = g.Id
-      ${whereClause}
-      LIMIT ? OFFSET ?;
-    `);
-    const result = stmnt.all(...params);
-    return successResponse(res, result);
-  } catch (error) {
-    console.log("getOrders", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-const createOrder = (req, res) => {
-  try {
-    const {
-      listingEntityType,
-      listingEntityId,
-      isNegotiated,
-      negotiationId,
-      quantity,
-      deliveryAddress,
-      deliveryOption,
-      paymentMethod,
-      isPaymentComplete,
-      createdUser,
-    } = req.body;
-
-    const listingEntity =
-      listingEntityType === "G" ? "GroupListing" : "CropListing";
-    const groupId = listingEntityType === "G" ? listingEntityId : null;
-    const listingId = listingEntityType === "G" ? null : listingEntityId;
-
-    let finalPrice, finalQuantity, listerId;
-
-    const stmnt = db.prepare(`SELECT * FROM ${listingEntity} where Id = ?`);
-    const listing = toCamelCaseObject(
-      stmnt.get(formatSQLValue(listingEntityId)),
-    );
-
-    if (!listing) {
-      return notFound(res, "Listing Entity Doesnot Exist!");
-    }
-
-    listerId = listing.createdUser;
-
-    if (isNegotiated) {
-      const ngStmnt = db.prepare(`
-          SELECT * FROM NegotiationHistory WHERE NegotiationId = ? AND IsAccepted = 1
-        `);
-      const negoHist = toCamelCaseObject(ngStmnt.get(negotiationId));
-      finalPrice = negoHist.price;
-      finalQuantity = negoHist.quantity;
-    } else {
-      if (listingEntity === "GroupListing") {
-        finalPrice = listing.pricePerUnit;
-        finalQuantity = listing.totalCombinedQuantity;
-      } else {
-        finalPrice = listing.pricePerUnit;
-        finalQuantity = quantity;
-      }
-    }
-
-    const stmnt1 = db.prepare(`
-        INSERT INTO Orders (
-        ListingEntityType,
-        ListingId,
-        GroupId,
-        ListerId,
-        BuyerId,
-        Quantity ,
-        OrderStatus,
-        IsNegotiated,
-        NegotiationId,
-        FinalPrice,
-        EstimatedFulfillmentDate,
-        DeliveryAddressId,
-        DeliveryOption,
-        PaymentMethod,
-        IsPaymentComplete,
-        CreatedUser
-        )
-
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
-      `);
-
-    const result = stmnt1.run(
-      formatSQLValue(listingEntityType),
-      formatSQLValue(listingId),
-      formatSQLValue(groupId),
-      formatSQLValue(listerId),
-      formatSQLValue(createdUser),
-      formatSQLValue(finalQuantity),
-      formatSQLValue(isNegotiated),
-      formatSQLValue(negotiationId),
-      formatSQLValue(finalPrice),
-      getFutureDateISO(new Date().toISOString()),
-      formatSQLValue(deliveryAddress),
-      formatSQLValue(deliveryOption),
-      formatSQLValue(paymentMethod),
-      formatSQLValue(isPaymentComplete),
-      formatSQLValue(createdUser),
-    );
-
-    return successResponse(
-      res,
-      result.lastInsertRowid,
-      "Order Created Successfully",
-    );
-  } catch (error) {
-    console.log("createOrder", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
 
 const orderDetails = (req, res) => {
-  // tested working
   try {
-    const orderId = Number(req.params.orderId);
-    const stmnt = db.prepare(`
-      SELECT * FROM Orders WHERE Id = ?
-    `);
-    const order = stmnt.get(orderId);
+    const orderId = Number(req.params.id);
+    const stmnt = `SELECT * FROM Orders WHERE Id = ?`;
+    const order = toCamelCaseObject(
+      db.prepare(stmnt).get(orderId)
+    );
+
     if (!order) {
       return notFound(res, "Order Not Found!");
     }
 
+    const liStmnt = `SELECT * FROM OrderLineItems WHERE OrderId = ?`;
+    const lineItems = db.prepare(liStmnt).all(orderId);
+
+    order["lineItems"] = lineItems;
     return successResponse(res, order);
   } catch (error) {
     console.log("orderDetails", error);
@@ -219,238 +38,592 @@ const orderDetails = (req, res) => {
   }
 };
 
-const getOrderDisputes = (req, res) => {
+const orderLineItemDetails = (req, res) => {
   try {
-    const userId = Number(req.params.userId) || null;
+    const lineItemId = Number(req.params.id);
+    const stmnt = `
+      SELECT 
+        LI.*
+        O.* 
+      FROM OrderLineItems LI
+      LEFT JOIN Orders O ON LI.OrderId = O.Id
+      WHERE Id = ?
+    `;
+    const lineItem = toCamelCaseObject(
+      db.prepare(stmnt).get(lineItemId)
+    );
+
+    if (!lineItem) {
+      return notFound(res, "Order Line Item Not Found!");
+    }
+
+    return successResponse(res, lineItem);
+  } catch (error) {
+    console.log("orderLineItemDetails", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
+const orderSearch = (req, res) => {
+  try {
+    const queryParams = req.query;
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
+    const orderBy = req.query.orderBy;
 
-    const { disputeType, status, assignedAdmin } = req.query;
+    let orderByQuery;
 
-    const whereContions = [];
+    const orderByOptions = [
+      { option: "CREATED_DESC", query: "O.CreatedDate DESC" },
+      { option: "CREATED_ASC", query: "O.CreatedDate ASC" },
+      { option: "AMOUNT_DESC", query: "O.TotalAmount DESC" },
+      { option: "AMOUNT_ASC", query: "O.TotalAmount ASC" },
+    ];
+
+    if (!orderBy || !orderByOptions.map((p) => p.option).includes(orderBy)) {
+      orderByQuery = orderByOptions.find(
+        (p) => p.option === "CREATED_DESC",
+      ).query;
+    } else {
+      orderByQuery = orderByOptions.find((p) => p.option === orderBy).query;
+    }
+
+    const allowedInput = ["buyerId", "status"];
+
+    const filterMap = {
+      buyerId: "O.BuyerId",
+      status: "O.Status",
+    };
+
+    const whereCondtions = [];
     const params = [];
 
-    if (userId) {
-      if (role !== "Farmer") {
-        whereContions.push("o.CreatedUser = ?");
+    // this is a repeating code, so helperize it
+    for (const key of allowedInput) {
+      if (key in queryParams) {
+        if (
+          queryParams[key] !== null &&
+          queryParams[key].toString().trim() !== ""
+        ) {
+          whereCondtions.push(`${filterMap[key]}=?`);
+          params.push(queryParams[key]);
+        }
       }
-      params.push(formatSQLValue(userId));
     }
-
-    if (assignedAdmin) {
-      whereContions.push("AssignedAdminId = ?");
-      params.push(formatSQLValue(assignedAdmin));
-    }
-
-    if (disputeType) {
-      whereContions.push("DisputeType = ?");
-      params.push(formatSQLValue(disputeType));
-    }
-
-    if (status) {
-      whereContions.push("Status = ?");
-      params.push(formatSQLValue(status));
-    }
-    params.push(pageSize, offset);
 
     const whereClause =
-      whereContions.length > 0 ? "WHERE " + whereContions.join(" AND ") : "";
-    const stmnt = db.prepare(
-      `SELECT * FROM OrderDispute ${whereClause} LIMIT ? OFFSET ?;`,
-    );
-    const result = stmnt.all(...params);
+      whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}` : "";
 
-    return successResponse(res, toCamelCaseObject(result));
+    const stmnt = `
+      SELECT 
+        O.Id,
+        O.BuyerId,
+        O.Status,
+        O.StatusReason,
+        O.TotalAmount,
+        O.PaymentStatus,
+        O.PaymentStatusReason,
+        COUNT(*) LI.Id as LineItems,
+        O.CreatedUser,
+        O.CreatedDate
+      FROM Orders O
+      LEFT JOIN OrderLineItems LI ON LI.OrderId = O.Id
+      ${whereClause} 
+      GROUP BY O.Id
+      ORDER BY ${orderByQuery}
+      LIMIT ? OFFSET ?
+    `;
+
+    const results = toCamelCaseObject(
+      db.prepare(stmnt).all(...params, pageSize, offset),
+    );
+
+    const countStmnt = db.prepare(
+      `SELECT COUNT(DISTINCT O.Id) as total 
+      FROM Orders O
+      LEFT JOIN OrderLineItems LI ON LI.OrderId = O.Id
+      ${whereClause}`,
+    );
+    const { total } = countStmnt.get(...params);
+
+    const resultData = {
+      data: toCamelCaseObject(results),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
+
+    successResponse(res, resultData);
   } catch (error) {
-    console.log("getOrderDisputes", error);
+    console.log("searchOrders", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const createOrderDispute = (req, res) => {
+// const orderLineItemSearch = (req,res) => {
+// try {
+//     const queryParams = req.query;
+//     const page = Number(req.query.page) || 1;
+//     const pageSize = Number(req.query.pageSize) || 10;
+//     const offset = (page - 1) * pageSize;
+//     const orderBy = req.query.orderBy;
+
+//     let orderByQuery;
+
+//     const orderByOptions = [
+//       { option: "CREATED_DESC", query: "O.CreatedDate DESC" },
+//       { option: "CREATED_ASC", query: "O.CreatedDate ASC" },
+//       { option: "AMOUNT_DESC", query: "LI.Amount DESC" },
+//       { option: "AMOUNT_ASC", query: "LI.Amount ASC" },
+//     ];
+
+//     if (!orderBy || !orderByOptions.map((p) => p.option).includes(orderBy)) {
+//       orderByQuery = orderByOptions.find(
+//         (p) => p.option === "CREATED_DESC",
+//       ).query;
+//     } else {
+//       orderByQuery = orderByOptions.find((p) => p.option === orderBy).query;
+//     }
+
+//     const allowedInput = ["buyerId", "listerId","status","listingEntityType","listingId","groupId"];
+
+//     const filterMap = {
+//       buyerId: "O.BuyerId",
+//       listerId: "LI.BuyerId",
+//       status: "LI.Status",
+//       listingEntityType: "LI.ListingEntityType",
+//       listingId: "LI.ListingId",
+//       groupId: "LI.GroupId",
+//     };
+
+//     const whereCondtions = [];
+//     const params = [];
+
+//     // this is a repeating code, so helperize it
+//     for (const key of allowedInput) {
+//       if (key in queryParams) {
+//         if (
+//           queryParams[key] !== null &&
+//           queryParams[key].toString().trim() !== ""
+//         ) {
+//           whereCondtions.push(`${filterMap[key]}=?`);
+//           params.push(queryParams[key]);
+//         }
+//       }
+//     }
+
+//     const whereClause =
+//       whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}` : "";
+
+//     const stmnt = `
+//       SELECT 
+//         LI.Id,
+//         LI.OrderId,
+//         O.BuyerId,
+//         LI.ListingEntityType,
+//         LI.ListingId,
+//         LI.GroupId,
+//         LI.ListerId,
+//         LI.Quantity,
+//         LI.DeliveryStatus,
+//         LI.Status,
+//         LI.IsNegotiated,
+//         LI.Amount,
+//         LI.EstimatedDeliveryDate,
+//         LI.ActualDeliveryDate
+//       FROM OrderLineItems LI
+//       LEFT JOIN Orders O ON LI.OrderId = O.Id
+//       ${whereClause} 
+//       ORDER BY ${orderByQuery}
+//       LIMIT ? OFFSET ?
+//     `;
+
+//     const results = toCamelCaseObject(
+//       db.prepare(stmnt).all(...params, pageSize, offset),
+//     );
+
+//     const countStmnt = db.prepare(
+//       `SELECT COUNT(DISTINCT LI.Id) as total 
+//       FROM OrderLineItems LI
+//       LEFT JOIN Orders O ON LI.OrderId = O.Id
+//       ${whereClause}`,
+//     );
+//     const { total } = countStmnt.get(...params);
+
+//     const resultData = {
+//       data: toCamelCaseObject(results),
+//       pagination: {
+//         page,
+//         pageSize,
+//         total,
+//         totalPages: Math.ceil(total / pageSize),
+//       },
+//     };
+
+//     successResponse(res, resultData);
+//   } catch (error) {
+//     console.log("orderLineItemSearch", error);
+//     return errorResponse(res, "Something went wrong!", 500, error.toString());
+//   }
+// }
+
+const searchOrderLineItems = (req, res) => {
   try {
-    const { orderId, disputeType, status, description, against, userId } =
-      req.body;
+    const queryParams = req.query;
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    const orderBy = req.query.orderBy;
 
-    const stmnt = db.prepare(`
-      INSERT INTO  OrderDispute (
-        OrderId,
-        DisputeType,
-        Status,
-        Description,
-        AgainstUserId,
-        CreatedUser,
-      ) VALUES (?,?,?,?,?,?);
-    `);
-    const result = stmnt.run(
-      orderId,
-      disputeType,
-      status,
-      description,
-      against,
-      userId,
-    );
-    return successResponse(res, result.lastInsertRowid);
-  } catch (error) {
-    console.log("createOrderDispute", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
+    let orderByQuery;
 
-const getOrderDisputeDetails = (req, res) => {
-  try {
-    const disputeId = Number(req.params.disputeId);
-    const dispute = db
-      .prepare(`SELECT * FROM OrderDispute WHERE Id=?`)
-      .get(disputeId);
+    const orderByOptions = [
+      { option: "CREATED_DESC", query: "O.CreatedDate DESC" },
+      { option: "CREATED_ASC", query: "O.CreatedDate ASC" },
+      { option: "AMOUNT_DESC", query: "LI.Amount DESC" },
+      { option: "AMOUNT_ASC", query: "LI.Amount ASC" },
+    ];
 
-    if (!dispute) {
-      return notFound(res);
+    if (!orderBy || !orderByOptions.map((p) => p.option).includes(orderBy)) {
+      orderByQuery = orderByOptions.find(
+        (p) => p.option === "CREATED_DESC",
+      ).query;
+    } else {
+      orderByQuery = orderByOptions.find((p) => p.option === orderBy).query;
     }
 
-    const chat = db
-      .prepare(`SELECT * FROM OrderDisputeChat WHERE DisputeId=?`)
-      .all(disputeId);
-    result.chat = chat;
+   const allowedInput = ["buyerId", "listerId","status","listingEntityType","listingId","groupId"];
 
-    return successResponse(res, toCamelCaseObject(result));
-  } catch (error) {
-    console.log("getOrderDisputeDetails", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
+    const filterMap = {
+      buyerId: "O.BuyerId",
+      listerId: "LI.BuyerId",
+      status: "LI.Status",
+      listingEntityType: "LI.ListingEntityType",
+      listingId: "LI.ListingId",
+      groupId: "LI.GroupId",
+    };
 
-const editDispute = (req, res) => {
-  try {
-    const disputeId = req.params.disputeId;
-    const {
-      status,
-      description,
-      internalNotes,
-      adminVerdict,
-      assignedAdminId,
-      lastOpenedById,
-    } = req.body;
-
-    const updateFields = [];
+    const whereCondtions = [];
     const params = [];
 
-    if (status) {
-      updateFields.push("Status = ?");
-      params.push(status);
+    // this is a repeating code, so helperize it
+    for (const key of allowedInput) {
+      if (key in queryParams) {
+        if (
+          queryParams[key] !== null &&
+          queryParams[key].toString().trim() !== ""
+        ) {
+          whereCondtions.push(`${filterMap[key]}=?`);
+          params.push(queryParams[key]);
+        }
+      }
     }
 
-    if (description) {
-      updateFields.push("Description = ?");
-      params.push(description);
-    }
+    const whereClause =
+      whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}` : "";
 
-    if (internalNotes) {
-      updateFields.push("InternalNotes = ?");
-      params.push(internalNotes);
-    }
+    const stmnt = `
+      SELECT 
+        LI.Id,
+        LI.OrderId,
+        LI.ListingEntityType,
+        LI.ListingId,
+        CL.Name as ListingName
+        LI.GroupId,
+        GL.Name
+        LI.ListerId,
+        LI.Quantity,
+        LI.DeliveryStatus,
+        LI.DeliveryStatusReason,
+        LI.Status,
+        LI.StatusReason,
+        LI.IsNegotiated,
+        LI.OrderTicketId,
+        LI.Amount,
+        LI.EstimatedDeliveryDate,
+        LI.ActualDeliveryDate,
+        LI.DeliveryAttemptCount,
+        O.Id as OrderId,
+        O.BuyerId,
+        B.FirstName as BuyerFirstName,
+        B.LastName as BuyerLastName,
+        B.UserName as BuyerUserName,
+        O.Status as OrderStatus,
+        O.DeliveryOption,
+        O.PaymentMethod
+      FROM OrderLineItems LI
+      LEFT JOIN Orders O ON LI.OrderId = O.Id
+      LEFT JOIN CropListing CL ON LI.ListingId = CL.Id
+      LEFT JOIN GroupListing GL ON LI.GroupId = GL.Id
+      LEFT JOIN Users B ON O.BuyerId = B.Id
+      ${whereClause}
+      ORDER BY ${orderByQuery}
+      LIMIT ? OFFSET ?
+    `;
 
-    if (adminVerdict) {
-      updateFields.push("AdminVerdict = ?");
-      params.push(adminVerdict);
-    }
+    const results = toCamelCaseObject(
+      db.prepare(stmnt).all(...params, pageSize, offset),
+    );
 
-    if (assignedAdminId) {
-      updateFields.push("AssignedAdminId = ?");
-      params.push(assignedAdminId);
-    }
+    // only the joins which might possibly come in the where clause
+    const countStmnt = db.prepare(
+      `SELECT COUNT(DISTINCT LI.Id) as total 
+      FROM OrderLineItems LI
+      LEFT JOIN Orders O ON LI.OrderId = O.Id
+      ${whereClause}`,
+    );
+    const { total } = countStmnt.get(...params);
 
-    if (lastOpenedById) {
-      updateFields.push("LastOpenedById = ?");
-      params.push(lastOpenedById);
-    }
+    const resultData = {
+      data: toCamelCaseObject(results),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
 
-    params.push(disputeId);
-
-    const updateCaluse = updateFields.join(", ");
-    const stmnt = db.prepare(`
-    UPDATE OrderDispute SET 
-    ${updateCaluse}
-    WHERE Id = ?;
-  `);
-
-    const result = stmnt.run(...params);
-
-    return successResponse(res);
+    successResponse(res, resultData);
   } catch (error) {
-    console.log("editDispute", error);
+    console.log("searchOrderLineItems", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const sendChat = (req,res) => {
+const createOrder = (req, res) => {
+  /**
+   * 1. Is from listing straigt foreward
+   * 2. From order Ticket after negotiation
+   */
   try {
-    const disputeId = req.params.disputeId;
     const {
-      sender,
-      message
+      buyerId,
+      deliveryOptionId,
+      deliveryAddressId,
+      paymentMethod,
+      paymentStatus,
+      lineItems,
+      deliveryOption
     } = req.body;
 
-    const stmnt = db.prepare(`INSERT INTO OrderDisputeChat(DisputeId,SentBy,Message) VALUES (?,?,?)`);
-    const result = stmnt.run(disputeId,sender,message);
-    return successResponse(res,result.lastInsertRowid);
+    const buyer = getUserById(buyerId);
+
+    if (!buyer) {
+      return notFound(res, "Buyer not Found!");
+    }
+
+    if (
+      !deliveryOptionId ||
+      deliveryOptionId === 0 ||
+      typeof deliveryOptionId !== "number"
+    ) {
+      throw new Error("Invalid deliveryOptionId");
+    }
+
+    if (
+      !deliveryAddressId ||
+      deliveryAddressId === 0 ||
+      typeof deliveryAddressId !== "number"
+    ) {
+      throw new Error("Invalid deliveryAddressId");
+    }
+
+    const adrsStmnt = "SELECT * FROM BuyerAddress WHERE UserId = ? AND Id = ?";
+    const deliveryAddress = db
+      .prepare(adrsStmnt)
+      .get(buyerId, deliveryAddressId);
+
+    if (!deliveryAddress) {
+      return notFound(res, "Delivery Address not Found!");
+    }
+
+    if (
+      !paymentMethod ||
+      paymentMethod === 0 ||
+      typeof paymentMethod !== "number"
+    ) {
+      throw new Error("Invalid paymentMethod");
+    }
+
+    if (
+      !paymentStatus ||
+      paymentStatus.toString().trim() === "" ||
+      typeof paymentStatus !== "string"
+    ) {
+      throw new Error("Invalid paymentStatus");
+    }
+
+    if (!lineItems || !Array.isArray(lineItems) || lineItems.length === 0) {
+      throw new Error("Invalid lineItems");
+    }
+
+    const { newlineItems , totalAmount} = prepareOrderLineItems(lineItems);
+
+    log("validtions complete");
+
+    const createTxn = db.transaction(() => {
+
+      // 1. Create order
+      const orderResult = createOrderRecord(
+        buyerId,
+        totalAmount,
+        deliveryAddressId,
+        deliveryOption,
+        paymentMethod,
+        paymentStatus,
+      );
+      const orderId = orderResult.lastInsertRowid;
+
+
+      // 2. Create Each Line Item 1 by one.
+      newlineItems.forEach((item)=> {
+        insertOrderLineItem(item,orderId,"I");
+        updateListingRemainingQuantity(item.listingId,item.quanity);
+      });
+
+      return orderResult;
+
+    });
+
+    const result = createTxn();
+    return successResponse(res, result.lastInsertRowid);   
   } catch (error) {
-    console.log("sendChat", error);
+    console.log("createOrder", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-const relaodChat = (req,res) => {
+
+const editOrderLineItem = (req, res) => {
   try {
-    const disputeId = req.params.disputeId;
-    const lastSeenId = req.query.lastSeenId;
+    const lineItemId = Number(req.params.id);
+    const lineItem = toCamelCaseObject(db
+      .prepare('SELECT * FROM OrderLineItems WHERE Id=?')
+      .get(lineItemId)
+    );
 
-    const stmnt = db.prepare(`SELECT * FROM OrderDisputeChat WHERE DisputeId = ? AND Id > ?`);
-    const result = stmnt.all(disputeId,lastSeenId);
-    return successResponse(res, toCamelCaseObject(result));
+    if(!lineItem) {
+      throw new Error('editOrderLineItem: Line Item Not Found!');
+    }
+
+    const incomingData = req.body;
+    const patchableFields = [
+      'Status',
+      'StatusReason',
+      'DeliveryStatus',
+      'DeliveryStatusReason',
+      'ActualDeliveryDate',
+    ];
+
+    const incomingKeys = Object.keys(incomingData).filter((k) => patchableFields.includes(capitalize(k)));
+
+    if(incomingKeys.length === 0) {
+      throw new Error('editOrderLineItem: No incoming data.')
+    }
+
+    const updatekeys = [];
+    const updateValues = [];
+
+    for (const key of incomingKeys) {
+      updatekeys.push(`${capitalize(key)} = ?`);
+      updateValues.push(incomingData[key]);
+    }
+
+    const updateClause = `SET ${updatekeys.join(", ")}`;
+
+  
+    const updateTxn = db.transaction(() => {
+      const stmnt = db.prepare(`
+        UPDATE OrderLineItems
+        ${updateClause}
+        WHERE Id = ?;
+      `);
+      const result = stmnt.run(...updateValues,lineItemId);
+
+      const stmnt2 = db.prepare(`
+        UPDATE Orders
+        SET UpdatedDate = CURRENT_TIMESTAMP
+        WHERE Id = ?;
+      `);
+      stmnt.run(lineItem.orderId);
+
+      return result;
+
+    });
+
+    const result = updateTxn();
+    return successResponse(res,result.changes);
   } catch (error) {
-    console.log("relaodChat", error);
+    console.log("editOrderLineItem", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
 
-/***
- * CREATE TABLE IF NOT EXISTS OrderDispute (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-        OrderId INTEGER,
-        DisputeType NVARCHAR(20),
-        Status NVARCHAR(20),
-        Description TEXT,
-        AgainstUserId INTEGER,
-        InternalNotes TEXT,
-        AdminVerdict TEXT,
-        AssignedAdminId INTEGER,
-        LastOpenedById INTEGER,
-        CreatedUser INTEGER,
-        UpdatedUser INTEGER,
-        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UpdatedDate DATETIME,
-        FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (UpdatedUser) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE SET NULL,
-        FOREIGN KEY (DisputeType) REFERENCES DisputeTypesLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (Status) REFERENCES DisputeStatusLov(Code) ON DELETE SET NULL,
-        FOREIGN KEY (AgainstUserId) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (AssignedAdminId) REFERENCES Users(Id) ON DELETE SET NULL,
-        FOREIGN KEY (LastOpenedById) REFERENCES Users(Id) ON DELETE SET NULL
+const editOrder = (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const order = toCamelCaseObject(db
+      .prepare('SELECT * FROM Orders WHERE Id=?')
+      .get(orderId)
     );
- */
+
+    if(!order) {
+      throw new Error('editOrder: Order Not Found!');
+    }
+
+    const incomingData = req.body;
+    const patchableFields = [
+      'Status',
+      'StatusReason',
+      'PaymentStatus',
+      'PaymentStatusReason',
+    ];
+
+    const incomingKeys = Object.keys(incomingData).filter((k) => patchableFields.includes(capitalize(k)));
+
+    if(incomingKeys.length === 0) {
+      throw new Error('editOrder: No incoming data.')
+    }
+
+    const updatekeys = [];
+    const updateValues = [];
+
+    for (const key of incomingKeys) {
+      updatekeys.push(`${capitalize(key)} = ?`);
+      updateValues.push(incomingData[key]);
+    }
+
+    updatekeys.push(`UpdatedDate = CURRENT_TIMESTAMP`);
+
+    const updateClause = `SET ${updatekeys.join(", ")}`;
+
+    const stmnt = db.prepare(`
+      UPDATE Orders
+      ${updateClause}
+      WHERE Id = ?;
+    `);
+    const result = stmnt.run(...updateValues,orderId);
+
+    return successResponse(res,result.changes);
+  } catch (error) {
+    console.log("editOrder", error);
+    return errorResponse(res, "Something went wrong!", 500, error.toString());
+  }
+};
+
 
 module.exports = {
-  getOrders,
-  createOrder,
+  orderSearch,
   orderDetails,
-  getOrderDisputes,
-  createOrderDispute,
-  getOrderDisputeDetails,
-  editDispute,
-  sendChat,
-  relaodChat,
+  orderLineItemDetails,
+  searchOrderLineItems,
+  createOrder,
+  editOrderLineItem,
+  editOrder
 };
