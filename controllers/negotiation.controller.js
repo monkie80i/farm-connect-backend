@@ -6,111 +6,6 @@ const {
   notFound,
 } = require("../responses/api.responses");
 
-// obsolete
-const negotiations = (req, res) => {
-  try {
-    const listingId = Number(req.params.listingId);
-    // created User
-    // status
-    // IsAccepted
-    // Accepeted By
-    // SORT BY created Date
-
-    const stmnt = db.prepare(`
-       SELECT * FROM Negotiation WHERE ListingId = ? 
-    `);
-
-    const result = stmnt.all(listingId);
-
-    return successResponse(res, result);
-  } catch (error) {
-    console.log("negotiations", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-// obsolete
-const createNegotiation = (req, res) => {
-  try {
-    const listingId = Number(req.params.listingId);
-    const { initialPrice, createdUser } = req.body;
-    // only once per listing per buyer
-
-    // make listing ID and Created User Unique
-
-    const stmnt = db.prepare(`
-        INSERT INTO Negotiation (ListingId,InitialPrice,CreatedUser)
-        VALUES (?,?,?);
-    `);
-
-    const result = stmnt.run(listingId, initialPrice, createdUser);
-    return successResponse(res, result.lastInsertRowid);
-  } catch (error) {
-    console.log("createNegotiation", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-const updateNegotiation = (req, res) => {
-  try {
-    const negotiationId = Number(req.params.negotiationId);
-    const { currentPrice, finalPrice, isAccepted, acceptedBy } = req.body;
-
-    const setArray = [];
-    const params = [];
-
-    if (currentPrice && currentPrice.toString().trim() !== "") {
-      setArray.push("CurrentPrice = ?");
-      params.push(formatSQLValue(currentPrice));
-    }
-
-    if (finalPrice && finalPrice.toString().trim() !== "") {
-      setArray.push("FinalPrice = ?");
-      params.push(formatSQLValue(finalPrice));
-    }
-
-    if (isAccepted) {
-      setArray.push("IsAccepted = ?");
-      params.push(formatSQLValue(isAccepted));
-    }
-
-    if (acceptedBy && acceptedBy.toString().trim() !== "") {
-      setArray.push("AcceptedBy = ?");
-      params.push(formatSQLValue(acceptedBy));
-    }
-
-    setArray.push("UpdatedDate = CURRENT_TIMESTAMP");
-    const setClause = setArray.join(",");
-
-    const stmnt1 = db.prepare(`
-        UPDATE Negotiation 
-        SET ${setClause}
-        WHERE Id = ?;
-    `);
-    const result = stmnt1.run(...params, negotiationId);
-    return successResponse(res);
-  } catch (error) {
-    console.log("updateNegotiation", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-// obsolete
-const listNegotiationHistory = (req, res) => {
-  try {
-    const negotiationId = Number(req.params.negotiationId);
-    const stmnt = db.prepare(
-      `SELECT * FROM NegotiationHistory WHERE NegotiationId = ?`,
-    );
-    const result = stmnt.all(negotiationId);
-    return successResponse(res, result);
-  } catch (error) {
-    console.log("listNegotiationHistory", error);
-    return errorResponse(res, "Something went wrong!", 500, error.toString());
-  }
-};
-
-// obsolete
 const createNegotiationHistory = (req, res) => {
   try {
     const negotiationId = Number(req.params.negotiationId);
@@ -822,7 +717,7 @@ module.exports = {
   createNegotiationV2,
   // createNegotiation,
   negotiationDetails,
-  updateNegotiation,
+  // updateNegotiation,
   // listNegotiationHistory,
   createNegotiationHistory,
   createNegotiationHistoryV2,
