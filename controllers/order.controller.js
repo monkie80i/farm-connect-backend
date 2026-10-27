@@ -54,15 +54,32 @@ const orderLineItemDetails = (req, res) => {
     const stmnt = `
       SELECT 
         LI.*,
-        O.* 
+        O.BuyerId,
+        O.Status as OrderStatus,
+        O.StatusReason as OrderStatusReason,
+        O.TotalAmount as OrderTotalAmount,
+        O.DeliveryAddressId,
+        O.DeliveryOption,
+        O.PaymentMethod,
+        O.PaymentStatus,
+        O.PaymentStatusReason,
+        O.CreatedUser,
+        O.UpdatedUser,
+        O.CreatedDate,
+        O.UpdatedDate,
         BA.Address as DeliveryAddressAddress,
         BA.City as DeliveryAddressCity,
-        BA.State as State
+        BA.State as State,
+        B.FirstName as BuyerFirstName,
+        B.LastName as BuyerLastName,
+        B.UserName as BuyerUserName
       FROM OrderLineItems LI
       LEFT JOIN Orders O ON LI.OrderId = O.Id
       LEFT JOIN BuyerAddress BA ON O.DeliveryAddressId = BA.Id
+      LEFT JOIN Users B ON O.CreatedUser = B.Id
       WHERE LI.Id = ?
     `;
+    console.log(stmnt)
     const lineItem = toCamelCaseObject(
       db.prepare(stmnt).get(lineItemId)
     );
@@ -380,6 +397,8 @@ const searchOrderLineItems = (req, res) => {
       ORDER BY ${orderByQuery}
       LIMIT ? OFFSET ?
     `;
+
+    console.log(stmnt)
 
     const results = toCamelCaseObject(
       db.prepare(stmnt).all(...params, pageSize, offset),

@@ -14,9 +14,9 @@ const {
 router.get('',orderSearch);
 router.post('',createOrder);
 
-router.get('/lineItems',searchOrderLineItems);
-router.get('/lineItems/:id',orderLineItemDetails);
-router.patch('/lineItems/:id',editOrderLineItem);
+router.get('/line-items',searchOrderLineItems);
+router.get('/line-items/:id',orderLineItemDetails);
+router.patch('/line-items/:id',editOrderLineItem);
 
 router.get('/:id',orderDetails);
 router.patch('/:id',editOrder);
