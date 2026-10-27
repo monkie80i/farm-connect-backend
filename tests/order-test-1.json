@@ -1,0 +1,38 @@
+// without negotiation
+{
+    "test-1": {
+        "buyerId": 18,
+        "deliveryOption": "PICK",
+        "deliveryAddressId":5,
+        "paymentMethod": "UPI",
+        "paymentStatus": "COMPLETE",
+        "lineItems": [
+            {
+            "listingId": 2,
+            "isNegotiated": 0,
+            "negotiationId": null,
+            "orderTicketId": null,
+            "quantity": 100
+            }
+        ]
+        },
+// passed
+
+// with negotiation
+    "test1": {
+        "buyerId": 18,
+        "deliveryOption": "PICK",
+        "deliveryAddressId":5,
+        "paymentMethod": "UPI",
+        "paymentStatus": "COMPLETE",
+        "lineItems": [
+            {
+            "listingId": 1,
+            "isNegotiated": 1,
+            "negotiationId": 2,
+            "orderTicketId": 1,
+            "quantity": null
+            }
+        ]
+        }
+}

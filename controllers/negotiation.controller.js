@@ -463,7 +463,6 @@ const acceptNegotiationV2 = (req, res) => {
       return notFound(res, "Negotiation does not exists!");
     }
 
-    console.log(negotiation);
     if (negotiation.status !== "ACTIVE") {
       return notFound(res, "Forbidden: Negotitation not Active!");
     }
@@ -610,7 +609,6 @@ const searchOrderTickets = (req, res) => {
 
     const whereClause =
       whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}` : "";
-    console.log(whereClause);
 
     const stmnt = `
       SELECT 
@@ -640,8 +638,6 @@ const searchOrderTickets = (req, res) => {
       ORDER BY ${orderByQuery}
       LIMIT ? OFFSET ?
     `;
-
-    console.log(stmnt);
 
     const results = toCamelCaseObject(
       db.prepare(stmnt).all(...params, pageSize, offset),

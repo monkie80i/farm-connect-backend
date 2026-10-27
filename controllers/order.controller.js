@@ -11,14 +11,24 @@ const {
   createOrderRecord,
   prepareOrderLineItems,
   insertOrderLineItem,
-  updateListingRemainingQuantity
+  updateListingRemainingQuantity,
+  redeemOrderTicket
 } = require("../services/order.services");
 
 
 const orderDetails = (req, res) => {
   try {
     const orderId = Number(req.params.id);
-    const stmnt = `SELECT * FROM Orders WHERE Id = ?`;
+    const stmnt = `
+      SELECT 
+        O.*,
+        BA.Address as DeliveryAddressAddress,
+        BA.City as DeliveryAddressCity,
+        BA.State as State 
+      FROM Orders O 
+      LEFT JOIN BuyerAddress BA ON O.DeliveryAddressId = BA.Id
+      WHERE O.Id = ?
+    `;
     const order = toCamelCaseObject(
       db.prepare(stmnt).get(orderId)
     );
@@ -28,7 +38,7 @@ const orderDetails = (req, res) => {
     }
 
     const liStmnt = `SELECT * FROM OrderLineItems WHERE OrderId = ?`;
-    const lineItems = db.prepare(liStmnt).all(orderId);
+    const lineItems = toCamelCaseObject(db.prepare(liStmnt).all(orderId));
 
     order["lineItems"] = lineItems;
     return successResponse(res, order);
@@ -43,11 +53,15 @@ const orderLineItemDetails = (req, res) => {
     const lineItemId = Number(req.params.id);
     const stmnt = `
       SELECT 
-        LI.*
+        LI.*,
         O.* 
+        BA.Address as DeliveryAddressAddress,
+        BA.City as DeliveryAddressCity,
+        BA.State as State
       FROM OrderLineItems LI
       LEFT JOIN Orders O ON LI.OrderId = O.Id
-      WHERE Id = ?
+      LEFT JOIN BuyerAddress BA ON O.DeliveryAddressId = BA.Id
+      WHERE LI.Id = ?
     `;
     const lineItem = toCamelCaseObject(
       db.prepare(stmnt).get(lineItemId)
@@ -124,11 +138,14 @@ const orderSearch = (req, res) => {
         O.TotalAmount,
         O.PaymentStatus,
         O.PaymentStatusReason,
-        COUNT(*) LI.Id as LineItems,
+        COUNT(LI.Id) as LineItems,
         O.CreatedUser,
+        B.FirstName as BuyerFirstName,
+        B.LastName as BuyerLastName,
         O.CreatedDate
       FROM Orders O
       LEFT JOIN OrderLineItems LI ON LI.OrderId = O.Id
+      LEFT JOIN Users B ON O.CreatedUser = B.Id
       ${whereClause} 
       GROUP BY O.Id
       ORDER BY ${orderByQuery}
@@ -138,7 +155,6 @@ const orderSearch = (req, res) => {
     const results = toCamelCaseObject(
       db.prepare(stmnt).all(...params, pageSize, offset),
     );
-
     const countStmnt = db.prepare(
       `SELECT COUNT(DISTINCT O.Id) as total 
       FROM Orders O
@@ -300,7 +316,7 @@ const searchOrderLineItems = (req, res) => {
 
     const filterMap = {
       buyerId: "O.BuyerId",
-      listerId: "LI.BuyerId",
+      listerId: "LI.ListerId",
       status: "LI.Status",
       listingEntityType: "LI.ListingEntityType",
       listingId: "LI.ListingId",
@@ -332,9 +348,9 @@ const searchOrderLineItems = (req, res) => {
         LI.OrderId,
         LI.ListingEntityType,
         LI.ListingId,
-        CL.Name as ListingName
+        CL.Name as ListingName,
         LI.GroupId,
-        GL.Name
+        GL.Name,
         LI.ListerId,
         LI.Quantity,
         LI.DeliveryStatus,
@@ -403,7 +419,6 @@ const createOrder = (req, res) => {
   try {
     const {
       buyerId,
-      deliveryOptionId,
       deliveryAddressId,
       paymentMethod,
       paymentStatus,
@@ -418,11 +433,11 @@ const createOrder = (req, res) => {
     }
 
     if (
-      !deliveryOptionId ||
-      deliveryOptionId === 0 ||
-      typeof deliveryOptionId !== "number"
+      !deliveryOption ||
+      deliveryOption.toString().trim() === "" ||
+      typeof deliveryOption !== "string"
     ) {
-      throw new Error("Invalid deliveryOptionId");
+      throw new Error("Invalid deliveryOption");
     }
 
     if (
@@ -444,8 +459,8 @@ const createOrder = (req, res) => {
 
     if (
       !paymentMethod ||
-      paymentMethod === 0 ||
-      typeof paymentMethod !== "number"
+      paymentMethod.toString().trim() === "" ||
+      typeof paymentMethod !== "string"
     ) {
       throw new Error("Invalid paymentMethod");
     }
@@ -464,10 +479,9 @@ const createOrder = (req, res) => {
 
     const { newlineItems , totalAmount} = prepareOrderLineItems(lineItems);
 
-    log("validtions complete");
+    log("Create Transaction Begins");
 
     const createTxn = db.transaction(() => {
-
       // 1. Create order
       const orderResult = createOrderRecord(
         buyerId,
@@ -479,12 +493,14 @@ const createOrder = (req, res) => {
       );
       const orderId = orderResult.lastInsertRowid;
 
-
       // 2. Create Each Line Item 1 by one.
       newlineItems.forEach((item)=> {
         insertOrderLineItem(item,orderId,"I");
-        updateListingRemainingQuantity(item.listingId,item.quanity);
+        updateListingRemainingQuantity(item.listingId,item.quantity);
+        if(item.isNegotiated === 1) redeemOrderTicket(item.orderTicketId,buyerId);
       });
+
+      // throw new Error("__ROLL_BACK__");  
 
       return orderResult;
 

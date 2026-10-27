@@ -2,6 +2,7 @@ const db = require("../db");
 const { log } = require("./logger.services");
 const {
   toCamelCaseObject,
+  getFutureDateISO,
 } = require("../utils/utlis");
 
 
@@ -23,6 +24,7 @@ const createOrderRecord = (
       DeliveryOption,
       PaymentMethod,
       PaymentStatus,
+      Status,
       CreatedUser
     ) VALUES (
       @buyerId,
@@ -31,6 +33,7 @@ const createOrderRecord = (
       @deliveryOption,
       @paymentMethod,
       @paymentStatus,
+      'ACTIVE',
       @buyerId
     )
   `;
@@ -58,24 +61,19 @@ const prepareOrderLineItems = (lineItems) => {
   let totalAmount = 0;
 
   for (const [index, item] of lineItems.entries()) {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 10);
-    futureDate.toISOString().slice(0, 10);
-
     const record = {
       listingId: null,
       listerId: null,
       quantity: null,
       deliveryStatus: "INACTIVE",
       deliveryStatusReason: null,
-      status: "PLACED",
+      status: "ACTIVE",
       statusReason: null,
       isNegotiated: 0,
       negotiationId: null,
       orderTicketId: null,
       amount: null,
-      estimatedDeliveryDate: futureDate.toISOString().slice(0, 10),
-      remainingQuantity: null
+      estimatedDeliveryDate: getFutureDateISO(new Date(),10)
     };
 
     if (
@@ -87,15 +85,22 @@ const prepareOrderLineItems = (lineItems) => {
     }
 
     const listing = toCamelCaseObject(
-      db.prepare("SELECT * FROM CropListing WHERE Id = ?").get(item.listerId),
+      db.prepare(`
+        SELECT 
+          CL.*,
+          P.FarmerId AS ListerId 
+        FROM CropListing CL
+        LEFT JOIN Produce P ON CL.ProduceId = P.Id
+        WHERE CL.Id = ?
+      `).get(item.listingId),
     );
 
     if (!listing) {
-      return notFound(res, `listing Not found in line Item ${index}`);
+      throw new Error(`listing Not found in line Item ${index}`);
     }
 
     record.listingId = item.listingId;
-    record.listerId = listing.createdUser;
+    record.listerId = listing.listerId;
 
     if (
       item.isNegotiated === undefined ||
@@ -120,7 +125,7 @@ const prepareOrderLineItems = (lineItems) => {
       );
 
       if (!negotiation) {
-        return notFound(res, `Negotiation Not found in line Item ${index}`);
+        throw new Error(`Negotiation Not found in line Item ${index}`);
       }
 
       if (
@@ -138,17 +143,17 @@ const prepareOrderLineItems = (lineItems) => {
       );
 
       if (!orderTicket) {
-        return notFound(res, `OrderTicket Not found in line Item ${index}`);
+        throw new Error(`OrderTicket Not found in line Item ${index}`);
       }
 
       const negotiationHistory = toCamelCaseObject(
         db
           .prepare("SELECT * FROM NegotiationHistory WHERE Id = ?")
-          .get(orderTicket.NegotiationHistoryId),
+          .get(orderTicket.negotiationHistoryId),
       );
 
       if (negotiationHistory.negotiationId !== item.negotiationId) {
-        return notFound(
+        throw new Error(
           res,
           `OrderTicket does not belong to the negotiation ${index}`,
         );
@@ -196,7 +201,6 @@ const prepareOrderLineItems = (lineItems) => {
 const insertOrderLineItem = (
   {
     listingId,
-    groupId,
     listerId,
     quantity,
     deliveryStatus,
@@ -219,7 +223,6 @@ const insertOrderLineItem = (
       OrderId,
       ListingEntityType,
       ListingId,
-      GroupId,
       ListerId,
       Quantity,
       DeliveryStatus,
@@ -235,7 +238,6 @@ const insertOrderLineItem = (
       @orderId,
       @listingEntityType,
       @listingId,
-      @groupId,
       @listerId,
       @quantity,
       @deliveryStatus,
@@ -246,14 +248,15 @@ const insertOrderLineItem = (
       @negotiationId,
       @orderTicketId,
       @amount,
-      @estimatedDeliveryDate,
+      @estimatedDeliveryDate
     )
   `;
 
   const result = db.prepare(stmnt)
     .run({
+      orderId,
+      listingEntityType,
       listingId,
-      groupId,
       listerId,
       quantity,
       deliveryStatus,
@@ -264,10 +267,9 @@ const insertOrderLineItem = (
       negotiationId,
       orderTicketId,
       amount,
-      estimatedDeliveryDate,
-      orderId,
-      listingEntityType,
+      estimatedDeliveryDate
     });
+
 
   return result;
 }
@@ -276,22 +278,103 @@ const updateListingRemainingQuantity = (listingId,quanity) => {
   const remStmnt = `SELECT RemainingQuantity FROM CropListing WHERE Id = ?`;
   const rem = toCamelCaseObject(db.prepare(remStmnt).get(listingId));
   const remainingQuantity = rem.remainingQuantity;
-
   const newValue = remainingQuantity - quanity;
 
   if(newValue < 0) {
     throw new Error(`Listing Id ${listingId}, remianing quantity less than order quantity`);
   }
 
-  const stmnt = `UPDATE CropListing SET RemainingQuantity = ? WHERE Id = ?`;
-  const result = db.prepare(stmnt).run(newValue,listingId);
-  return result;
+  const setClauseList = [];
+  const paramsList = [];
+
+  setClauseList.push('RemainingQuantity = ?');
+  paramsList.push(newValue);
+
+  if(newValue === 0) {
+    setClauseList.push('Status = ?');
+    paramsList.push('SOLD_OUT');
+  }
+
+  paramsList.push(listingId);
+
+  const setClause = setClauseList.join(', ');
+  const stmnt = `UPDATE CropListing SET ${setClause} WHERE Id = ?`;
+  const result = db.prepare(stmnt).run(...paramsList);
+  return { result , remainingQuantity: newValue};
 };
+
+ const redeemOrderTicket = (orderTicketId,userId) => {
+  const stmnt = `
+    SELECT N.Id as NegotiationId
+    FROM OrderTickets OT
+    LEFT JOIN NegotiationHistory NH ON OT.NegotiationHistoryId = NH.Id
+    LEFT JOIN Negotiations N ON NH.NegotiationId = N.Id
+    WHERE OT.Id = ?
+  `;
+
+  const result = toCamelCaseObject(
+    db.prepare(stmnt)
+    .get(orderTicketId)
+  );
+
+  const { negotiationId } = result;
+
+  // update Negotiation
+  const negUpStmnt = `
+    UPDATE Negotiations SET 
+    IsActive = 0,
+    Status = 'SATISFIED',
+    UpdatedUser = ?,
+    UpdatedDate = CURRENT_TIMESTAMP
+    WHERE Id = ?
+  `;
+  db.prepare(negUpStmnt).run(userId,negotiationId);
+
+  // update orderTicket
+  const otUpStmnt = `
+    UPDATE OrderTickets SET 
+    Status = 'COMPLETE',
+    UpdatedUser = ?,
+    UpdatedDate = CURRENT_TIMESTAMP
+    WHERE Id = ?
+  `;
+  db.prepare(otUpStmnt).run(userId,orderTicketId);
+
+}
+
+// const deleteOrder = (orderId) => {
+
+//   const stmtn1 = `SELECT * FROM Orders WHERE Id = ?`;
+//   const order = toCamelCaseObject(db.prepare(stmtn1).get(orderId))
+
+//   if(!order) {
+//     throw new Error("Order does not exist")
+//   }
+
+//   // get order line items - store their ids
+//   // DELETE FROM OrderLineItems WHERE OrderId = 4. -- modify accordingly;
+
+  
+
+//   // delete order
+//   //  DELETE FROM Orders WHERE Id = 4;
+
+//   // update crop lising 
+
+
+// // update CropListing set Status = 'ACTIVE', RemainingQuantity = 400 where Id = 1;
+
+// };
+
+
 
 
 module.exports = {
     createOrderRecord,
     prepareOrderLineItems,
     insertOrderLineItem,
-    updateListingRemainingQuantity
+    updateListingRemainingQuantity,
+    redeemOrderTicket
 }
+
+
