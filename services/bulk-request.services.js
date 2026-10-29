@@ -53,7 +53,7 @@ const createGroupListing = (
     requiredQuantity,
     offeredPricePerUnit,
     neededByDate,
-    deliveryLocation,
+    deliveryAddressId,
   } = bulkRequest;
   const stmnt1 = `INSERT INTO GroupListing
     (
@@ -65,7 +65,7 @@ const createGroupListing = (
         TotalCombinedQuantity,
         PricePerUnit,
         Unit,
-        DeliveryLocation,
+        DeliveryAddressId,
         NeededByDate,
         NumberOfParticipants,
         CreatedUser
@@ -78,7 +78,7 @@ const createGroupListing = (
         @totalCombinedQuantity,
         @offeredPricePerUnit,
         'KG',
-        @deliveryLocation,
+        @deliveryAddressId,
         @neededByDate,
         @numParticipants,
         @buyerId
@@ -93,7 +93,7 @@ const createGroupListing = (
     requiredQuantity,
     offeredPricePerUnit,
     neededByDate,
-    deliveryLocation,
+    deliveryAddressId,
     totalCombinedQuantity,
     numParticipants,
     buyerId,

@@ -365,9 +365,8 @@ const searchOrderLineItems = (req, res) => {
         LI.OrderId,
         LI.ListingEntityType,
         LI.ListingId,
-        CL.Name as ListingName,
+        COALESCE(CL.Name,GL.Name) as ListingName,
         LI.GroupId,
-        GL.Name,
         LI.ListerId,
         LI.Quantity,
         LI.DeliveryStatus,
@@ -398,7 +397,6 @@ const searchOrderLineItems = (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    console.log(stmnt)
 
     const results = toCamelCaseObject(
       db.prepare(stmnt).all(...params, pageSize, offset),

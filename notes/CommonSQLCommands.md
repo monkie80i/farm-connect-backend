@@ -13,3 +13,6 @@ WHERE type = 'table'
   OR type = 'table' 
   AND sql LIKE '%REFERENCES your_table_name%';```
 
+
+
+farmconnect_v2.db ".schema" > test.sql

@@ -34,7 +34,8 @@ const {
     groupDetails,
     editGroup,
     bulkRequestsCreatePledge,
-    bulkRequestsDeletePledge
+    bulkRequestsDeletePledge,
+    groupParticipantsEdit
 } = require('../controllers/group.controller');
 
 
@@ -83,6 +84,9 @@ router.delete("/bulk-request/pledge/:pledgeId", bulkRequestsDeletePledge); // te
 router.get('/groups', searchGroupListings); // tested working
 router.get('/group/:groupId', groupDetails); // tested working
 router.put('/group/:groupId', editGroup); // not sure if needed
+router.put('/group-participants/:id',groupParticipantsEdit) // untested
+
+
 
 // NEGOTIATIONS
 router.get('/negotiations', searchNegotiations); 
