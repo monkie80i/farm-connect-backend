@@ -1,5 +1,5 @@
 const db = require("../db");
-const { toCamelCaseObject } = require("../utils/utlis");
+const { toCamelCaseObject, capitalize } = require("../utils/utlis");
 const {
   successResponse,
   errorResponse,
@@ -7,14 +7,14 @@ const {
 } = require("../responses/api.responses");
 const { getUserById } = require("../services/user.service");
 const { log } = require("../services/logger.services");
-const { 
+const {
   createOrderRecord,
   prepareOrderLineItems,
   insertOrderLineItem,
   updateListingRemainingQuantity,
-  redeemOrderTicket
+  redeemOrderTicket,
+  insertLineItemStatusHistory,
 } = require("../services/order.services");
-
 
 const orderDetails = (req, res) => {
   try {
@@ -29,9 +29,7 @@ const orderDetails = (req, res) => {
       LEFT JOIN BuyerAddress BA ON O.DeliveryAddressId = BA.Id
       WHERE O.Id = ?
     `;
-    const order = toCamelCaseObject(
-      db.prepare(stmnt).get(orderId)
-    );
+    const order = toCamelCaseObject(db.prepare(stmnt).get(orderId));
 
     if (!order) {
       return notFound(res, "Order Not Found!");
@@ -79,10 +77,7 @@ const orderLineItemDetails = (req, res) => {
       LEFT JOIN Users B ON O.CreatedUser = B.Id
       WHERE LI.Id = ?
     `;
-    console.log(stmnt)
-    const lineItem = toCamelCaseObject(
-      db.prepare(stmnt).get(lineItemId)
-    );
+    const lineItem = toCamelCaseObject(db.prepare(stmnt).get(lineItemId));
 
     if (!lineItem) {
       return notFound(res, "Order Line Item Not Found!");
@@ -197,112 +192,6 @@ const orderSearch = (req, res) => {
   }
 };
 
-// const orderLineItemSearch = (req,res) => {
-// try {
-//     const queryParams = req.query;
-//     const page = Number(req.query.page) || 1;
-//     const pageSize = Number(req.query.pageSize) || 10;
-//     const offset = (page - 1) * pageSize;
-//     const orderBy = req.query.orderBy;
-
-//     let orderByQuery;
-
-//     const orderByOptions = [
-//       { option: "CREATED_DESC", query: "O.CreatedDate DESC" },
-//       { option: "CREATED_ASC", query: "O.CreatedDate ASC" },
-//       { option: "AMOUNT_DESC", query: "LI.Amount DESC" },
-//       { option: "AMOUNT_ASC", query: "LI.Amount ASC" },
-//     ];
-
-//     if (!orderBy || !orderByOptions.map((p) => p.option).includes(orderBy)) {
-//       orderByQuery = orderByOptions.find(
-//         (p) => p.option === "CREATED_DESC",
-//       ).query;
-//     } else {
-//       orderByQuery = orderByOptions.find((p) => p.option === orderBy).query;
-//     }
-
-//     const allowedInput = ["buyerId", "listerId","status","listingEntityType","listingId","groupId"];
-
-//     const filterMap = {
-//       buyerId: "O.BuyerId",
-//       listerId: "LI.BuyerId",
-//       status: "LI.Status",
-//       listingEntityType: "LI.ListingEntityType",
-//       listingId: "LI.ListingId",
-//       groupId: "LI.GroupId",
-//     };
-
-//     const whereCondtions = [];
-//     const params = [];
-
-//     // this is a repeating code, so helperize it
-//     for (const key of allowedInput) {
-//       if (key in queryParams) {
-//         if (
-//           queryParams[key] !== null &&
-//           queryParams[key].toString().trim() !== ""
-//         ) {
-//           whereCondtions.push(`${filterMap[key]}=?`);
-//           params.push(queryParams[key]);
-//         }
-//       }
-//     }
-
-//     const whereClause =
-//       whereCondtions.length > 0 ? `WHERE ${whereCondtions.join(" AND ")}` : "";
-
-//     const stmnt = `
-//       SELECT 
-//         LI.Id,
-//         LI.OrderId,
-//         O.BuyerId,
-//         LI.ListingEntityType,
-//         LI.ListingId,
-//         LI.GroupId,
-//         LI.ListerId,
-//         LI.Quantity,
-//         LI.DeliveryStatus,
-//         LI.Status,
-//         LI.IsNegotiated,
-//         LI.Amount,
-//         LI.EstimatedDeliveryDate,
-//         LI.ActualDeliveryDate
-//       FROM OrderLineItems LI
-//       LEFT JOIN Orders O ON LI.OrderId = O.Id
-//       ${whereClause} 
-//       ORDER BY ${orderByQuery}
-//       LIMIT ? OFFSET ?
-//     `;
-
-//     const results = toCamelCaseObject(
-//       db.prepare(stmnt).all(...params, pageSize, offset),
-//     );
-
-//     const countStmnt = db.prepare(
-//       `SELECT COUNT(DISTINCT LI.Id) as total 
-//       FROM OrderLineItems LI
-//       LEFT JOIN Orders O ON LI.OrderId = O.Id
-//       ${whereClause}`,
-//     );
-//     const { total } = countStmnt.get(...params);
-
-//     const resultData = {
-//       data: toCamelCaseObject(results),
-//       pagination: {
-//         page,
-//         pageSize,
-//         total,
-//         totalPages: Math.ceil(total / pageSize),
-//       },
-//     };
-
-//     successResponse(res, resultData);
-//   } catch (error) {
-//     console.log("orderLineItemSearch", error);
-//     return errorResponse(res, "Something went wrong!", 500, error.toString());
-//   }
-// }
 
 const searchOrderLineItems = (req, res) => {
   try {
@@ -329,7 +218,14 @@ const searchOrderLineItems = (req, res) => {
       orderByQuery = orderByOptions.find((p) => p.option === orderBy).query;
     }
 
-   const allowedInput = ["buyerId", "listerId","status","listingEntityType","listingId","groupId"];
+    const allowedInput = [
+      "buyerId",
+      "listerId",
+      "status",
+      "listingEntityType",
+      "listingId",
+      "groupId",
+    ];
 
     const filterMap = {
       buyerId: "O.BuyerId",
@@ -397,7 +293,6 @@ const searchOrderLineItems = (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-
     const results = toCamelCaseObject(
       db.prepare(stmnt).all(...params, pageSize, offset),
     );
@@ -440,7 +335,7 @@ const createOrder = (req, res) => {
       paymentMethod,
       paymentStatus,
       lineItems,
-      deliveryOption
+      deliveryOption,
     } = req.body;
 
     const buyer = getUserById(buyerId);
@@ -494,7 +389,7 @@ const createOrder = (req, res) => {
       throw new Error("Invalid lineItems");
     }
 
-    const { newlineItems , totalAmount} = prepareOrderLineItems(lineItems);
+    const { newlineItems, totalAmount } = prepareOrderLineItems(lineItems);
 
     log("Create Transaction Begins");
 
@@ -511,52 +406,56 @@ const createOrder = (req, res) => {
       const orderId = orderResult.lastInsertRowid;
 
       // 2. Create Each Line Item 1 by one.
-      newlineItems.forEach((item)=> {
-        insertOrderLineItem(item,orderId,"I");
-        updateListingRemainingQuantity(item.listingId,item.quantity);
-        if(item.isNegotiated === 1) redeemOrderTicket(item.orderTicketId,buyerId);
+      newlineItems.forEach((item) => {
+        insertOrderLineItem(item, orderId, "I");
+        updateListingRemainingQuantity(item.listingId, item.quantity);
+        if (item.isNegotiated === 1)
+          redeemOrderTicket(item.orderTicketId, buyerId);
       });
 
-      // throw new Error("__ROLL_BACK__");  
+      // throw new Error("__ROLL_BACK__");
 
       return orderResult;
-
     });
 
     const result = createTxn();
-    return successResponse(res, result.lastInsertRowid);   
+    return successResponse(res, result.lastInsertRowid);
   } catch (error) {
     console.log("createOrder", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-
 const editOrderLineItem = (req, res) => {
   try {
     const lineItemId = Number(req.params.id);
-    const lineItem = toCamelCaseObject(db
-      .prepare('SELECT * FROM OrderLineItems WHERE Id=?')
-      .get(lineItemId)
+    const lineItem = toCamelCaseObject(
+      db.prepare("SELECT * FROM OrderLineItems WHERE Id=?").get(lineItemId),
     );
 
-    if(!lineItem) {
-      throw new Error('editOrderLineItem: Line Item Not Found!');
+    if (!lineItem) {
+      throw new Error("editOrderLineItem: Line Item Not Found!");
     }
 
     const incomingData = req.body;
     const patchableFields = [
-      'Status',
-      'StatusReason',
-      'DeliveryStatus',
-      'DeliveryStatusReason',
-      'ActualDeliveryDate',
+      "Status",
+      "StatusReason",
+      "DeliveryStatus",
+      "DeliveryStatusReason",
+      "ActualDeliveryDate",
     ];
 
-    const incomingKeys = Object.keys(incomingData).filter((k) => patchableFields.includes(capitalize(k)));
+    const incomingKeys = Object.keys(incomingData).filter((k) =>
+      patchableFields.includes(capitalize(k)),
+    );
 
-    if(incomingKeys.length === 0) {
-      throw new Error('editOrderLineItem: No incoming data.')
+    if (incomingKeys.length === 0) {
+      throw new Error("editOrderLineItem: No incoming data.");
+    }
+
+    if (!incomingData["userId"] || typeof incomingData["userId"] !== "number") {
+      throw new Error("Invalid user Id");
     }
 
     const updatekeys = [];
@@ -567,61 +466,98 @@ const editOrderLineItem = (req, res) => {
       updateValues.push(incomingData[key]);
     }
 
+    if(incomingKeys.includes("deliveryStatus")) {
+      if (incomingData["deliveryStatus"] == "DELIVERED") {
+        updatekeys.push(`ActualDeliveryDate = CURRENT_TIMESTAMP`);
+      }
+
+      if (incomingData["deliveryStatus"] == "EN_ROUTE") {
+        const attemptCount = lineItem.deliveryAttemptCount + 1;
+        updatekeys.push(`DeliveryAttemptCount = ?`);
+        updateValues.push(attemptCount);
+
+      }
+
+       if (incomingData["deliveryStatus"] == "RE_ATTEMPT") {
+        const attemptCount = lineItem.deliveryAttemptCount + 1;
+        updatekeys.push(`DeliveryAttemptCount = ?`);
+        updateValues.push(attemptCount);
+      }
+    }
+    
+
+
+
     const updateClause = `SET ${updatekeys.join(", ")}`;
 
-  
     const updateTxn = db.transaction(() => {
       const stmnt = db.prepare(`
         UPDATE OrderLineItems
         ${updateClause}
         WHERE Id = ?;
       `);
-      const result = stmnt.run(...updateValues,lineItemId);
+      const result = stmnt.run(...updateValues, lineItemId);
 
       const stmnt2 = db.prepare(`
         UPDATE Orders
-        SET UpdatedDate = CURRENT_TIMESTAMP
+        SET 
+        UpdatedDate = CURRENT_TIMESTAMP,
+        UpdatedUser = ?
         WHERE Id = ?;
       `);
-      stmnt.run(lineItem.orderId);
+      stmnt2.run(Number(incomingData["userId"]), lineItem.orderId);
+
+      const statusFields = ["status", "deliveryStatus"];
+
+      statusFields.forEach((value) => {
+        if (incomingKeys.includes(value)) {
+          insertLineItemStatusHistory(
+            lineItemId,
+            capitalize(value),
+            incomingData[value],
+            incomingData["userId"],
+          );
+        }
+      });
+
+      // throw new Error("__ROLL_BACK__");
 
       return result;
-
     });
 
     const result = updateTxn();
-    return successResponse(res,result.changes);
+    return successResponse(res, result.changes);
   } catch (error) {
     console.log("editOrderLineItem", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
 
-
 const editOrder = (req, res) => {
   try {
     const orderId = Number(req.params.id);
-    const order = toCamelCaseObject(db
-      .prepare('SELECT * FROM Orders WHERE Id=?')
-      .get(orderId)
+    const order = toCamelCaseObject(
+      db.prepare("SELECT * FROM Orders WHERE Id=?").get(orderId),
     );
 
-    if(!order) {
-      throw new Error('editOrder: Order Not Found!');
+    if (!order) {
+      throw new Error("editOrder: Order Not Found!");
     }
 
     const incomingData = req.body;
     const patchableFields = [
-      'Status',
-      'StatusReason',
-      'PaymentStatus',
-      'PaymentStatusReason',
+      "Status",
+      "StatusReason",
+      "PaymentStatus",
+      "PaymentStatusReason",
     ];
 
-    const incomingKeys = Object.keys(incomingData).filter((k) => patchableFields.includes(capitalize(k)));
+    const incomingKeys = Object.keys(incomingData).filter((k) =>
+      patchableFields.includes(capitalize(k)),
+    );
 
-    if(incomingKeys.length === 0) {
-      throw new Error('editOrder: No incoming data.')
+    if (incomingKeys.length === 0) {
+      throw new Error("editOrder: No incoming data.");
     }
 
     const updatekeys = [];
@@ -641,15 +577,14 @@ const editOrder = (req, res) => {
       ${updateClause}
       WHERE Id = ?;
     `);
-    const result = stmnt.run(...updateValues,orderId);
+    const result = stmnt.run(...updateValues, orderId);
 
-    return successResponse(res,result.changes);
+    return successResponse(res, result.changes);
   } catch (error) {
     console.log("editOrder", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };
-
 
 module.exports = {
   orderSearch,
@@ -658,5 +593,5 @@ module.exports = {
   searchOrderLineItems,
   createOrder,
   editOrderLineItem,
-  editOrder
+  editOrder,
 };

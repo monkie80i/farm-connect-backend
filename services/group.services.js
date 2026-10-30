@@ -64,8 +64,6 @@ const groupListingSearchService = (queryParams) => {
       : ""
     ;
 
-   
-    // console.log(whereClause);
 
     const stmnt = `
       SELECT 
@@ -99,9 +97,6 @@ const groupListingSearchService = (queryParams) => {
       LIMIT ? OFFSET ?
     `;
 
-    // console.log(stmnt)
-
-
     const results = toCamelCaseObject(
       db.prepare(stmnt).all(...params, pageSize, offset),
     );
@@ -126,6 +121,55 @@ const groupListingSearchService = (queryParams) => {
     return resultData;
 }
 
+const updateProduceRelatedValues = (produceId,participant) => {
+  // We have to do this transactionally cos it might be changed after the validation
+  const groupId = participant.groupId;
+  const { remainingQuantity } = toCamelCaseObject(
+    db
+      .prepare("SELECT RemainingQuantity FROM Produce WHERE Id = ?")
+      .get(produceId),
+  );
+
+  const newRemainingQuantity =
+    remainingQuantity - participant.contributionQuantity;
+
+  db.prepare(
+    `UPDATE Produce 
+      SET RemainingQuantity = ? WHERE Id = ?`,
+  ).run(newRemainingQuantity, produceId);
+
+  const { lineItemId, orderId, orderStatus } = toCamelCaseObject(
+    db
+    .prepare(
+      `
+      SELECT 
+        LI.Id as LineItemId, 
+        LI.OrderId,
+        O.Status as OrderStatus
+      FROM OrderLineItems LI
+      LEFT JOIN Orders O ON LI.OrderId = O.Id
+      WHERE LI.ListingEntityType = 'G' AND LI.GroupId = ? AND LI.ListerId = ?`
+    )
+    .get(groupId,participant.userId),
+  );
+
+  if(lineItemId) {
+    db.prepare(
+    `UPDATE OrderLineItems 
+          SET Status = 'ACTIVE', DeliveryStatus = 'PREPARING' WHERE Id = ?`,
+    ).run(lineItemId);
+  }
+
+  if (orderId && orderStatus === "NEW") {
+    db.prepare(
+      `UPDATE OrderLineItems 
+            SET Status = 'ACTIVE' WHERE Id = ?`,
+    ).run(orderId);
+  }
+  log("Updated Produce Related Values.")
+};
+
 module.exports = {
-    groupListingSearchService
+    groupListingSearchService,
+    updateProduceRelatedValues
 }

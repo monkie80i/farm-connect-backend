@@ -414,6 +414,41 @@ const redeemOrderTicket = (orderTicketId, userId) => {
   db.prepare(otUpStmnt).run(userId, orderTicketId);
 };
 
+
+const insertLineItemStatusHistory = (
+  lineItemId,
+  columnName,
+  status,
+  userId
+) => {
+
+    const stmnt = `
+      INSERT INTO OrderLineItemStatusHistory 
+      (
+        LineItemId,
+        StatusColumn,
+        StatusCode,
+        ChangedAt,
+        ChangedBy
+      ) VALUES (
+        @lineItemId,
+        @columnName,
+        @status,
+        CURRENT_TIMESTAMP,
+        @userId
+      )
+    `;
+
+    db.prepare(stmnt).run({
+      lineItemId,
+      columnName,
+      status,
+      userId
+    })
+
+    log(`INSERTED TO OrderLineItemStatusHistory ${lineItemId},${columnName},${status},${userId}.`)
+};
+
 // const deleteOrder = (orderId) => {
 
 //   const stmtn1 = `SELECT * FROM Orders WHERE Id = ?`;
@@ -441,5 +476,6 @@ module.exports = {
   insertOrderLineItem,
   updateListingRemainingQuantity,
   redeemOrderTicket,
-  prepareGroupOrderLineItems
+  prepareGroupOrderLineItems,
+  insertLineItemStatusHistory
 };

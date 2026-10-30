@@ -19,7 +19,7 @@ const {
   createBulkReqPledge,
 } = require("../services/bulk-request.services");
 const { log } = require("../services/logger.services");
-const { groupListingSearchService } = require("../services/group.services");
+const { groupListingSearchService, updateProduceRelatedValues } = require("../services/group.services");
 const { createOrderRecord, prepareOrderLineItems, prepareGroupOrderLineItems, insertOrderLineItem } = require("../services/order.services");
 
 const searchGroupListings = (req, res) => {
@@ -704,7 +704,6 @@ const bulkRequestsSelectPledge = (req, res) => {
       committedQuantity -= pledge.pledgedQuantity;
     }
 
-    console.log("Comitted Qty", committedQuantity);
     const isSelected = value === true ? 1 : 0;
 
     const updateTxn = db.transaction(() => {
@@ -781,11 +780,11 @@ const groupParticipantsEdit = (req, res) => {
     );
 
     if (!participant) {
-      throw new Error("editOrder: Participant Not Found!");
+      throw new Error("Participant Not Found!");
     }
 
     const incomingData = req.body;
-    const patchableFields = ["status", "produceId"];
+    const patchableFields = ["Status", "ProduceId"];
 
     const incomingKeys = Object.keys(incomingData).filter((k) =>
       patchableFields.includes(capitalize(k)),
@@ -796,6 +795,10 @@ const groupParticipantsEdit = (req, res) => {
     }
 
     if (incomingKeys.includes("produceId")) {
+      if (participant.produceId) {
+        throw new Error("Produce already exist!");
+      }
+
       const produce = toCamelCaseObject(
         db
           .prepare("SELECT * FROM Produce WHERE Id = ?")
@@ -839,7 +842,7 @@ const groupParticipantsEdit = (req, res) => {
 
       if (incomingKeys.includes("produceId")) 
         updateProduceRelatedValues(incomingData["produceId"],participant);
-
+      // throw new Error("__ROLL_BACK__");
       return result;
     });
 
@@ -852,58 +855,7 @@ const groupParticipantsEdit = (req, res) => {
   }
 };
 
-const updateProduceRelatedValues = (produceId,participant) => {
-  // We have to do this transactionally cos it might be changed after the validation
-  const { remainingQuantity, groupId } = toCamelCaseObject(
-    db
-      .prepare("SELECT RemainingQuantity,GroupId FROM Produce WHERE Id = ?")
-      .get(produceId),
-  );
-  console.log(remainingQuantity, groupId);
 
-  const newRemainingQuantity =
-    remainingQuantity - participant.contributionQuantity;
-  console.log(newRemainingQuantity);
-
-  db.prepare(
-    `UPDATE Produce 
-      SET RemainingQuantity = ? WHERE Id = ?`,
-  ).run(newRemainingQuantity, produceId);
-
-  const { lineItemId, orderId, orderStatus } = toCamelCaseObject(
-    db
-    .prepare(
-      `
-      SELECT 
-        LI.Id as LineItemId, 
-        LI.OrderId,
-        O.Status as OrderStatus
-      FROM OrderLineItems LI
-      LEFT JOIN Orders O ON LI.OrderId = O.Id
-      WHERE LI.ListingEntityType = 'G' AND LI.GroupId = ?`,
-    )
-    .get(groupId),
-  );
-  console.log(lineItemId, orderId, orderStatus);
-
-  if(lineItemId) {
-    db.prepare(
-    `UPDATE OrderLineItems 
-          SET Status = 'ACTIVE', DeliveryStatus = 'PREPARING' WHERE Id = ?`,
-    ).run(lineItemId);
-  }
-  
-
-  console.log("line item updated");
-
-  if (orderId && orderStatus === "NEW") {
-    db.prepare(
-      `UPDATE OrderLineItems 
-            SET Status = 'ACTIVE' WHERE Id = ?`,
-    ).run(orderId);
-    console.log("order  updated");
-  }
-};
 
 module.exports = {
   searchGroupListings,
