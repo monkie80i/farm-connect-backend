@@ -36,9 +36,9 @@ const getUserDetails = (req, res) => {
   // tested working
   try {
     const id = Number(req.params.userId);
-    console.log("Fetching details for user id:", id);
+    // console.log("Fetching details for user id:", id);
     const user = authService.getUserByUserId(id);
-    console.log("User details retrieved:", user);
+    // console.log("User details retrieved:", user);
     if (user) {
       const data = utils.toCamelCaseObject(user);
       delete data["passwordHash"]

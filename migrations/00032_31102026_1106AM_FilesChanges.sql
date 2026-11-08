@@ -1,0 +1,19 @@
+DROP INDEX IF EXISTS IX_File_Entity;
+DROP TABLE IF EXISTS File;
+
+CREATE TABLE Files (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    OrginalName TEXT NOT NULL,
+    FileName TEXT NOT NULL,
+    FullPath TEXT NOT NULL,
+    Url TEXT NOT NULL,
+    Size INTEGER NOT NULL,
+    EntityType NVARCHAR(50) NOT NULL,
+    EntityId INTEGER,
+    CreatedUser INTEGER,
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CreatedUser) REFERENCES Users(Id) ON DELETE SET NULL
+);
+
+
+CREATE INDEX IX_Files_Entity ON Files (EntityType, EntityId);

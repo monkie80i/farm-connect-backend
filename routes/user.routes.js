@@ -17,14 +17,14 @@ const {
     patchProfileDetails
 } = require("../controllers/user.controller");
 
-const {
-    getOrderDisputes,
-    createOrderDispute,
-    getOrderDisputeDetails,
-    editDispute,
-    sendChat,
-    relaodChat,
-} = require("../controllers/dispute.controller")
+// const {
+//     getOrderDisputes,
+//     createOrderDispute,
+//     getOrderDisputeDetails,
+//     editDispute,
+//     sendChat,
+//     relaodChat,
+// } = require("../controllers/dispute.controller")
 
 router.get('/users',searchUsers); // tested working
 
@@ -50,17 +50,17 @@ router.patch("/:userId/profile", patchProfileDetails ); // tested working
 
 router.get('/:userId/all-negotiations', getAllUserNegotiations);
 
-router.get('/:userId/order-disputes', getOrderDisputes);
+// router.get('/:userId/order-disputes', getOrderDisputes);
 
-router.post('/order-disputes/:orderId', createOrderDispute);
+// router.post('/order-disputes/:orderId', createOrderDispute);
 
-router.get('/order-dispute/:disputeId', getOrderDisputeDetails);
+// router.get('/order-dispute/:disputeId', getOrderDisputeDetails);
 
-router.put('/order-dispute/:disputeId', editDispute);
+// router.put('/order-dispute/:disputeId', editDispute);
 
-router.post('/order-dispute-chat/:disputeId', sendChat);
+// router.post('/order-dispute-chat/:disputeId', sendChat);
 
-router.get('/order-dispute-chat/:disputeId', relaodChat);
+// router.get('/order-dispute-chat/:disputeId', relaodChat);
 
 // router.delete('/order-dispute/:disputeId', (req,res) => {}); // not urgent
 

@@ -16,6 +16,8 @@ const queryRoutes = require("./routes/query.routes");
 const negotaitionRoutes = require("./routes/negotiation.routes");
 const orderTicketRoutes = require("./routes/order-ticket.routes");
 const orderRoutes = require("./routes/order.routes");
+const disputeRoutes = require("./routes/dispute.routes");
+
 
 
 const { UPLOAD_DIR } = require("./services/file.services");
@@ -45,6 +47,8 @@ app.use(baseUrl + "/query/", queryRoutes);
 app.use(baseUrl + "/negotiations", negotaitionRoutes);
 app.use(baseUrl + "/order-tickets", orderTicketRoutes);
 app.use(baseUrl + "/orders", orderRoutes);
+app.use(baseUrl + "/order-disputes", disputeRoutes);
+
 
 app.use(baseUrl + "/uploads", express.static(UPLOAD_DIR));
 app.use(express.static(path.join(__dirname, "public")));

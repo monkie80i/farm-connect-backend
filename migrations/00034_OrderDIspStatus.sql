@@ -1,0 +1,1 @@
+UPDATE DisputeStatusLov SET Description = 'Resolved' WHERE Code = 'RESOLVED';
