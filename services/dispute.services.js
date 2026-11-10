@@ -1,7 +1,6 @@
 const db = require("../db");
 const { log } = require("./logger.services");
 
-
 const insertDisputeRecord = (
   orderLineItemId,
   disputeType,
@@ -14,12 +13,14 @@ const insertDisputeRecord = (
       OrderLineItemId,
       DisputeType,
       DisputeTypeDesc,
+      Status,
       Description,
       CreatedUser
     ) VALUES (
       @orderLineItemId,
       @disputeType,
       @disputeTypeDesc,
+      'ACTIVE',
       @description,
       @createdUser
     );

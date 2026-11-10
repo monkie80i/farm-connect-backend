@@ -37,12 +37,13 @@ const searchOrderDisputes = (req, res) => {
       orderByQuery = orderByOptions.find((p) => p.option === orderBy).query;
     }
 
-    const allowedInput = ["disputeType", "status", "assignedAdminId"];
+    const allowedInput = ["disputeType", "status", "assignedAdminId","lineItemId"];
 
     const filterMap = {
       disputeType: "OD.DisputeType",
       status: "OD.Status",
       assignedAdminId: "OD.AssignedAdminId",
+      lineItemId: "OD.OrderLineItemId"
     };
 
     const whereCondtions = [];
@@ -145,6 +146,8 @@ const createOrderDispute = (req, res) => {
     } =
       req.body;
 
+    let diputeTypeOtherDesc;
+
     if (
       !orderLineItemId ||
       orderLineItemId.toString().trim() === "" ||
@@ -161,6 +164,11 @@ const createOrderDispute = (req, res) => {
       throw new Error("Invalid disputeType");
     }
 
+    const type = toCamelCaseObject(
+      db.prepare('SELECT * FROM DisputeTypesLov WHERE Code = ?')
+      .get(disputeType)
+    )
+
     if(disputeType === "OTHR") {
       if (
         !disputeTypeDesc ||
@@ -169,8 +177,10 @@ const createOrderDispute = (req, res) => {
       ) {
         throw new Error("disputeTypeDesc required for disputeType other");
       }
+
+      diputeTypeOtherDesc = disputeTypeDesc;
     } else {
-      disputeTypeDesc = null
+      diputeTypeOtherDesc = null
     }
 
     if (
@@ -224,7 +234,7 @@ const createOrderDispute = (req, res) => {
       const result = insertDisputeRecord(
         Number(orderLineItemId),
         disputeType,
-        disputeTypeDesc,
+        diputeTypeOtherDesc,
         description,
         Number(userId),
       );
