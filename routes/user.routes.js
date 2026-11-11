@@ -16,6 +16,11 @@ const {
     markOrderAlertRead,
     patchProfileDetails
 } = require("../controllers/user.controller");
+const {
+    getFarmerDashboard,
+    getBuyerDashboard,
+    getAdminDashboard,
+} = require("../controllers/dashboard.controller");
 
 // const {
 //     getOrderDisputes,
@@ -27,6 +32,11 @@ const {
 // } = require("../controllers/dispute.controller")
 
 router.get('/users',searchUsers); // tested working
+
+router.get('/dashboard/farmer', getFarmerDashboard);
+router.get('/dashboard/buyer', getBuyerDashboard);
+router.get('/dashboard/admin', getAdminDashboard);
+
 
 router.get('/notifications/:userId', getRecentNotifications); // tested working
 

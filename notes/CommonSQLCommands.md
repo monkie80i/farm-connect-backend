@@ -18,3 +18,5 @@ WHERE type = 'table'
 farmconnect_v2.db ".schema" > test.sql
 
 farmconnect_v2.db ".schema" > 29102026_1145AM.sql
+
+farmconnect_v2.db ".schema" > 10Nov.sql

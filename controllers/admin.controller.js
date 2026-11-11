@@ -1,18 +1,3 @@
-// Pending verifications -  Number
-// Active Disputes -  Number
-// Total Active Listings - Number
-// Order Volume - Number
-// Monthly Active Users - For Past 5 Months
-// Orders over time -  Past Month
-// Most Traded Crops
-// Table
-// Recent Verifications
-// User ID
-// User Name
-// User Type
-// Joining Date
-// View Details
-
 const db = require("../db");
 const { toCamelCaseObject, addDate, getTodayDate } = require("../utils/utlis");
 const {
@@ -107,7 +92,7 @@ const adminDashboard = (req, res) => {
 
     return successResponse(res,response);
   } catch (error) {
-    console.log("getMarketplaceDetails", error);
+    console.log("adminDashboard", error);
     return errorResponse(res, "Something went wrong!", 500, error.toString());
   }
 };

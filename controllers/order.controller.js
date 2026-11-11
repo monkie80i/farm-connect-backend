@@ -277,6 +277,7 @@ const searchOrderLineItems = (req, res) => {
         LI.DeliveryAttemptCount,
         O.Id as OrderId,
         O.BuyerId,
+        O.CreatedDate,
         B.FirstName as BuyerFirstName,
         B.LastName as BuyerLastName,
         B.UserName as BuyerUserName,

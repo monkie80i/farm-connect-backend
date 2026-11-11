@@ -615,6 +615,7 @@ const searchOrderTickets = (req, res) => {
         OT.*,
         NH.Price as AgreedPrice,
         NH.Quantity as AgreedQuantity,
+        N.Id as NegotiationId,
         N.ListingId,
         CL.Name as ListingName,
         P.FarmerId,
