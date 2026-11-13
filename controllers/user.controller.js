@@ -74,13 +74,13 @@ const getUserProfileDetails = (req, res) => {
     profileDetails.addresses = [];
     profileDetails.paymentMethods = [];
 
-    if (role === "FARMER") {
-      const paymentStmnt = db.prepare(
+    const paymentStmnt = db.prepare(
         `SELECT * FROM UserPaymentMethod WHERE UserId = ?`,
       );
 
-      profileDetails.paymentMethods = paymentStmnt.all(userId);
+    profileDetails.paymentMethods = paymentStmnt.all(userId);
 
+    if (role === "FARMER") {
       const farmStmnt = db.prepare(`SELECT * FROM Farm WHERE UserId = ?`);
       profileDetails.farms = farmStmnt.all(userId);
 
@@ -207,7 +207,6 @@ const editProfileDetails = (req,res) => {
 
     if(!user) {
       return notFound(res,"User Not Found!");
-      return;
     }
 
     const role = user.role;
@@ -232,7 +231,7 @@ const editProfileDetails = (req,res) => {
 
     // BEGIN;
     let  query = `
-      
+
       UPDATE UserProfile SET 
         DisplayPicturePath = ${formatSQLValue(displayPicturePath)}, Address = ${formatSQLValue(address)},
         City = ${formatSQLValue(city)}, State = ${formatSQLValue(state)}, IdProofType = ${formatSQLValue(idProofType)},
